@@ -1,0 +1,16 @@
+{
+  "combat": {
+    "questionTime": 20,
+    "comboWindow": 5,
+    "maxQuestionsPerBattle": 5,
+    "baseScore": 30,
+    "timeBonusPerSecond": 2,
+    "comboMultiplier": 0.15,
+    "weaknessMultiplier": 1.3
+  },
+  "player": {
+    "startHP": 100,
+    "startMP": 50,
+    "speed": 160
+  }
+}

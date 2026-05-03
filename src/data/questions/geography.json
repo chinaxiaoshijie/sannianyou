@@ -1,0 +1,57 @@
+[
+  {
+    "id": "geo_001",
+    "subject": "地理",
+    "difficulty": 1,
+    "text": "地球表面最大的洲是？",
+    "options": ["亚洲", "非洲", "北美洲", "南美洲"],
+    "correctIndex": 0,
+    "explanation": "亚洲是世界上面积最大的洲，面积约4400万平方公里，占地球陆地总面积的约30%。",
+    "knowledgePoint": "世界地理概况",
+    "source": "人教版高中地理必修一"
+  },
+  {
+    "id": "geo_002",
+    "subject": "地理",
+    "difficulty": 2,
+    "text": "板块构造学说认为，地球岩石圈被划分为几大板块？",
+    "options": ["六大板块", "四大板块", "七大板块", "五大板块"],
+    "correctIndex": 0,
+    "explanation": "板块构造学说将全球岩石圈划分为六大板块：太平洋板块、亚欧板块、非洲板块、美洲板块、印度洋板块和南极洲板块。",
+    "knowledgePoint": "板块构造学说",
+    "source": "人教版高中地理必修一"
+  },
+  {
+    "id": "geo_003",
+    "subject": "地理",
+    "difficulty": 2,
+    "text": "中国最长的河流是？",
+    "options": ["长江", "黄河", "珠江", "黑龙江"],
+    "correctIndex": 0,
+    "explanation": "长江全长约6300公里，是中国最长的河流，也是世界第三长河，发源于青藏高原唐古拉山脉。",
+    "knowledgePoint": "中国河流",
+    "source": "人教版高中地理必修三"
+  },
+  {
+    "id": "geo_004",
+    "subject": "地理",
+    "difficulty": 3,
+    "text": "赤道附近的气候类型主要是？",
+    "options": ["热带雨林气候", "热带草原气候", "热带沙漠气候", "地中海气候"],
+    "correctIndex": 0,
+    "explanation": "赤道附近终年受赤道低气压带控制，盛行上升气流，形成全年高温多雨的热带雨林气候。",
+    "knowledgePoint": "气候类型分布",
+    "source": "人教版高中地理必修一"
+  },
+  {
+    "id": "geo_005",
+    "subject": "地理",
+    "difficulty": 3,
+    "text": "我国年降水量最多的地区是？",
+    "options": ["台湾火烧寮", "云南西双版纳", "海南三亚", "广东广州"],
+    "correctIndex": 0,
+    "explanation": "台湾火烧寮是我国年降水量最多的地方，年平均降水量达6558毫米，最高记录超过8000毫米。",
+    "knowledgePoint": "中国降水分布",
+    "source": "人教版高中地理必修三"
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "bio_001",
+    "subject": "生物",
+    "difficulty": 1,
+    "text": "细胞的基本结构和功能单位是？",
+    "options": ["细胞膜", "细胞核", "细胞质", "线粒体"],
+    "correctIndex": 0,
+    "explanation": "细胞膜是细胞的边界结构，控制物质进出细胞，是细胞最基本的结构之一。所有细胞都具有细胞膜。",
+    "knowledgePoint": "细胞结构",
+    "source": "人教版高中生物必修一"
+  },
+  {
+    "id": "bio_002",
+    "subject": "生物",
+    "difficulty": 2,
+    "text": "DNA双螺旋结构的发现者是？",
+    "options": ["沃森和克里克", "孟德尔", "达尔文", "摩尔根"],
+    "correctIndex": 0,
+    "explanation": "1953年，沃森(James Watson)和克里克(Francis Crick)提出了DNA双螺旋结构模型，这是分子生物学的里程碑。",
+    "knowledgePoint": "DNA结构",
+    "source": "人教版高中生物必修二"
+  },
+  {
+    "id": "bio_003",
+    "subject": "生物",
+    "difficulty": 2,
+    "text": "光合作用的主要场所是？",
+    "options": ["叶绿体", "线粒体", "细胞核", "内质网"],
+    "correctIndex": 0,
+    "explanation": "叶绿体是植物细胞中进行光合作用的细胞器，含有叶绿素，能将光能转化为化学能。",
+    "knowledgePoint": "光合作用",
+    "source": "人教版高中生物必修一"
+  },
+  {
+    "id": "bio_004",
+    "subject": "生物",
+    "difficulty": 3,
+    "text": "孟德尔遗传定律中，F2代的性状分离比是？",
+    "options": ["3:1", "1:1", "9:3:3:1", "1:2:1"],
+    "correctIndex": 0,
+    "explanation": "孟德尔一对相对性状的杂交实验中，F2代显性性状与隐性性状的比例为3:1，这是分离定律的核心内容。",
+    "knowledgePoint": "孟德尔遗传定律",
+    "source": "人教版高中生物必修二"
+  },
+  {
+    "id": "bio_005",
+    "subject": "生物",
+    "difficulty": 3,
+    "text": "人体最大的器官是？",
+    "options": ["皮肤", "肝脏", "肺", "小肠"],
+    "correctIndex": 0,
+    "explanation": "皮肤是人体最大的器官，成年人的皮肤面积约1.5-2平方米，具有保护、排泄、调节体温等多种功能。",
+    "knowledgePoint": "人体器官系统",
+    "source": "人教版高中生物必修三"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "gate": {"id": "gate", "name": "大门", "zone": "south", "x": 640, "y": 680, "scene": "create", "unlock": "新生"},
+  "bridge": {"id": "bridge", "name": "状元桥", "zone": "central", "x": 640, "y": 610, "scene": "ritual", "unlock": "新生"},
+  "library": {"id": "library", "name": "图书馆", "zone": "central", "x": 640, "y": 350, "scene": "skill_tree", "unlock": "探索者"},
+  "teaching": {"id": "teaching", "name": "教学楼", "zone": "central", "x": 560, "y": 300, "scene": "guild", "unlock": "入门"},
+  "canteen_s": {"id": "canteen_s", "name": "食堂(南)", "zone": "south", "x": 800, "y": 550, "scene": "restore", "buff": "speed"},
+  "dorm_s": {"id": "dorm_s", "name": "南宿舍", "zone": "south", "x": 900, "y": 580, "scene": "save", "demon_level": "low"},
+  "stadium": {"id": "stadium", "name": "体育中心", "zone": "south", "x": 400, "y": 500, "scene": "training", "unlock": "新生"},
+  "art_center": {"id": "art_center", "name": "艺术中心", "zone": "south", "x": 300, "y": 550, "scene": "skill_unlock", "unlock": "入门"},
+  "lab": {"id": "lab", "name": "实验室", "zone": "northwest", "x": 200, "y": 200, "scene": "dungeon", "unlock": "精通者"},
+  "field_n": {"id": "field_n", "name": "北运动场", "zone": "north", "x": 640, "y": 120, "scene": "boss_prep", "unlock": "贯通者"},
+  "field_s": {"id": "field_s", "name": "南运动场", "zone": "south", "x": 1000, "y": 300, "scene": "trial", "unlock": "新生"}
+}

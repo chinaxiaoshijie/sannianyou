@@ -1,0 +1,57 @@
+[
+  {
+    "id": "chem_001",
+    "subject": "化学",
+    "difficulty": 1,
+    "text": "水的化学式是？",
+    "options": ["H₂O", "CO₂", "NaCl", "O₂"],
+    "correctIndex": 0,
+    "explanation": "水由两个氢原子和一个氧原子组成，化学式为H₂O，是最常见的溶剂。",
+    "knowledgePoint": "化学式与分子结构",
+    "source": "人教版高中化学必修一"
+  },
+  {
+    "id": "chem_002",
+    "subject": "化学",
+    "difficulty": 2,
+    "text": "元素周期表中，第17号元素是？",
+    "options": ["氯(Cl)", "硫(S)", "氩(Ar)", "磷(P)"],
+    "correctIndex": 0,
+    "explanation": "第17号元素是氯(Cl)，位于第三周期第VIIA族（第17族），是一种卤素。",
+    "knowledgePoint": "元素周期表",
+    "source": "人教版高中化学必修一"
+  },
+  {
+    "id": "chem_003",
+    "subject": "化学",
+    "difficulty": 2,
+    "text": "下列哪种物质属于强电解质？",
+    "options": ["NaCl", "CH₃COOH", "NH₃·H₂O", "H₂CO₃"],
+    "correctIndex": 0,
+    "explanation": "NaCl在水中完全电离为Na⁺和Cl⁻，属于强电解质。其他三种均为弱电解质，在水中部分电离。",
+    "knowledgePoint": "电解质与非电解质",
+    "source": "人教版高中化学必修一"
+  },
+  {
+    "id": "chem_004",
+    "subject": "化学",
+    "difficulty": 3,
+    "text": "氧化还原反应的本质是？",
+    "options": ["电子的转移", "质子的转移", "离子的交换", "原子的重组"],
+    "correctIndex": 0,
+    "explanation": "氧化还原反应的本质是电子的转移（得失或偏移）。失去电子的过程叫氧化，得到电子的过程叫还原。",
+    "knowledgePoint": "氧化还原反应",
+    "source": "人教版高中化学必修一"
+  },
+  {
+    "id": "chem_005",
+    "subject": "化学",
+    "difficulty": 3,
+    "text": "实验室制取氧气最常用的方法是？",
+    "options": ["加热高锰酸钾", "电解水", "加热氧化汞", "分离液态空气"],
+    "correctIndex": 0,
+    "explanation": "实验室常用加热高锰酸钾(KMnO₄)的方法制取氧气：2KMnO₄ → K₂MnO₄ + MnO₂ + O₂↑",
+    "knowledgePoint": "气体的实验室制法",
+    "source": "人教版高中化学必修一"
+  }
+]

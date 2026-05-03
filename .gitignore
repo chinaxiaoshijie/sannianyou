@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+# Unused Kenney models (replaced with procedural Minecraft textures)
+public/assets/models/

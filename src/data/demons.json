@@ -1,0 +1,86 @@
+{
+  "forgotten_script": {
+    "id": "forgotten_script",
+    "name": "遗忘·残卷",
+    "element": "遗忘",
+    "hp": 100,
+    "maxHP": 100,
+    "weakness": "历史",
+    "attack": 10,
+    "defense": 5,
+    "zone": "south",
+    "rank": 1
+  },
+  "anxiety_mist": {
+    "id": "anxiety_mist",
+    "name": "焦虑·迷雾",
+    "element": "焦虑",
+    "hp": 120,
+    "maxHP": 120,
+    "weakness": "生物",
+    "attack": 12,
+    "defense": 8,
+    "zone": "south",
+    "rank": 1
+  },
+  "fear_shadow": {
+    "id": "fear_shadow",
+    "name": "恐惧·暗影",
+    "element": "恐惧",
+    "hp": 150,
+    "maxHP": 150,
+    "weakness": "地理",
+    "attack": 15,
+    "defense": 10,
+    "zone": "central",
+    "rank": 2
+  },
+  "pride_phantom": {
+    "id": "pride_phantom",
+    "name": "骄傲·幻象",
+    "element": "骄傲",
+    "hp": 180,
+    "maxHP": 180,
+    "weakness": "化学",
+    "attack": 18,
+    "defense": 12,
+    "zone": "central",
+    "rank": 2
+  },
+  "procrastination_wraith": {
+    "id": "procrastination_wraith",
+    "name": "拖延·亡灵",
+    "element": "拖延",
+    "hp": 200,
+    "maxHP": 200,
+    "weakness": "地理",
+    "attack": 20,
+    "defense": 15,
+    "zone": "north",
+    "rank": 3
+  },
+  "inferiority_beast": {
+    "id": "inferiority_beast",
+    "name": "自卑·巨兽",
+    "element": "自卑",
+    "hp": 250,
+    "maxHP": 250,
+    "weakness": "生物",
+    "attack": 25,
+    "defense": 18,
+    "zone": "northwest",
+    "rank": 4
+  },
+  "restlessness_storm": {
+    "id": "restlessness_storm",
+    "name": "浮躁·风暴",
+    "element": "浮躁",
+    "hp": 300,
+    "maxHP": 300,
+    "weakness": "历史",
+    "attack": 30,
+    "defense": 20,
+    "zone": "north",
+    "rank": 5
+  }
+}
