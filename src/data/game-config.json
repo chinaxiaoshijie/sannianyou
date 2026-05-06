@@ -11,6 +11,145 @@
   "player": {
     "startHP": 100,
     "startMP": 50,
-    "speed": 160
-  }
+    "speed": 160,
+    "startLingShi": 10
+  },
+  "economy": {
+    "dailyLingShi": 5,
+    "comboBonus": 2
+  },
+  "skills": [
+    {
+      "id": "fireball",
+      "name": "破题诀",
+      "icon": "🔥",
+      "mpCost": 15,
+      "cooldown": 2,
+      "effect": "bonusDamage",
+      "value": 35,
+      "description": "消耗 15 才气，本题额外造成 35 点文锋"
+    },
+    {
+      "id": "heal",
+      "name": "养心诀",
+      "icon": "💚",
+      "mpCost": 20,
+      "cooldown": 3,
+      "effect": "heal",
+      "value": 30,
+      "description": "消耗 20 才气，恢复 30 心力"
+    },
+    {
+      "id": "focus",
+      "name": "凝神术",
+      "icon": "🎯",
+      "mpCost": 10,
+      "cooldown": 3,
+      "effect": "doubleScore",
+      "value": 2.0,
+      "description": "消耗 10 才气，本题文锋翻倍"
+    }
+  ],
+  "techniques": [
+    {
+      "id": "fireball",
+      "name": "破题诀",
+      "type": "active",
+      "cost": 15,
+      "cooldown": 2,
+      "rankReq": 1,
+      "effect": "本题额外 +35 文锋",
+      "value": 35
+    },
+    {
+      "id": "heal",
+      "name": "养心诀",
+      "type": "active",
+      "cost": 20,
+      "cooldown": 3,
+      "rankReq": 2,
+      "effect": "恢复 30 心力",
+      "value": 30
+    },
+    {
+      "id": "focus",
+      "name": "凝神术",
+      "type": "active",
+      "cost": 10,
+      "cooldown": 3,
+      "rankReq": 3,
+      "effect": "本题文锋 ×2",
+      "value": 2.0
+    },
+    {
+      "id": "insight",
+      "name": "触类旁通",
+      "type": "passive",
+      "cost": 0,
+      "cooldown": 0,
+      "rankReq": 4,
+      "effect": "明悟时 20% 概率不扣时间",
+      "value": 0.2
+    },
+    {
+      "id": "extendTime",
+      "name": "举一反三",
+      "type": "active",
+      "cost": 25,
+      "cooldown": 5,
+      "rankReq": 5,
+      "effect": "下 3 题每时限 +5 秒",
+      "value": 5
+    },
+    {
+      "id": "keepCombo",
+      "name": "融会贯通",
+      "type": "active",
+      "cost": 30,
+      "cooldown": 4,
+      "rankReq": 7,
+      "effect": "本题困顿也保持贯通",
+      "value": 1
+    },
+    {
+      "id": "timeRewind",
+      "name": "时光回溯",
+      "type": "active",
+      "cost": 40,
+      "cooldown": 8,
+      "rankReq": 0,
+      "effect": "困顿后可用，重新论学本题",
+      "value": 1
+    },
+    {
+      "id": "poisonImmune",
+      "name": "百毒不侵",
+      "type": "passive",
+      "cost": 0,
+      "cooldown": 0,
+      "rankReq": 0,
+      "effect": "惑障反噬文锋减半",
+      "value": 0.5
+    },
+    {
+      "id": "regenerate",
+      "name": "生生不息",
+      "type": "active",
+      "cost": 30,
+      "cooldown": 6,
+      "rankReq": 0,
+      "effect": "恢复 40 心力 + 本题文锋 +15",
+      "value": 40
+    },
+    {
+      "id": "tripleFire",
+      "name": "三昧真火",
+      "type": "active",
+      "cost": 35,
+      "cooldown": 7,
+      "rankReq": 0,
+      "effect": "本题文锋 ×3",
+      "value": 3.0
+    }
+  ]
 }

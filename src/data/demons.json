@@ -3,84 +3,277 @@
     "id": "forgotten_script",
     "name": "遗忘·残卷",
     "element": "遗忘",
-    "hp": 100,
-    "maxHP": 100,
-    "weakness": "历史",
-    "attack": 10,
+    "subjectDims": [
+      "物理"
+    ],
+    "rank": 1,
+    "hp": 200,
+    "maxHP": 200,
+    "weakness": "物理",
     "defense": 5,
     "zone": "south",
-    "rank": 1
+    "xinLi": 200,
+    "maxXinLi": 200,
+    "attack": 12,
+    "phases": [
+      {
+        "index": 0,
+        "name": "卷轴初展",
+        "triggerHP": 1.0,
+        "description": "古籍卷轴缓缓展开，纸页飞散。",
+        "attacks": [
+          {
+            "id": "scroll_sweep",
+            "name": "卷轴横扫",
+            "type": "melee",
+            "warningType": "fan",
+            "warningAngle": 90,
+            "warningRange": 5,
+            "warningTime": 0.8,
+            "damage": 12,
+            "cooldown": 3,
+            "description": "卷轴横向扫过前方90度扇形区域"
+          },
+          {
+            "id": "page_shot",
+            "name": "纸页飞射",
+            "type": "ranged",
+            "warningType": "line",
+            "warningTime": 1.0,
+            "damage": 10,
+            "cooldown": 2.5,
+            "projectileSpeed": 8,
+            "description": "古籍纸页如飞镖射出，沿直线弹道飞行"
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "name": "纸墙围困",
+        "triggerHP": 0.6,
+        "description": "卷轴完全展开，纸页形成围墙。",
+        "attacks": [
+          {
+            "id": "paper_wall",
+            "name": "纸墙合围",
+            "type": "aoe",
+            "warningType": "circle",
+            "warningRadius": 4,
+            "warningTime": 1.2,
+            "damage": 15,
+            "cooldown": 5,
+            "description": "纸页在目标位置形成圆形围困区域"
+          },
+          {
+            "id": "page_barrage",
+            "name": "纸页连射",
+            "type": "ranged",
+            "warningType": "line",
+            "warningTime": 0.7,
+            "damage": 8,
+            "cooldown": 1.5,
+            "burstCount": 3,
+            "burstDelay": 0.4,
+            "projectileSpeed": 10,
+            "description": "连续射出3片纸页，间隔0.4秒"
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "name": "古籍崩解",
+        "triggerHP": 0.3,
+        "description": "卷轴碎裂，核心暴露。",
+        "attacks": [
+          {
+            "id": "core_beam",
+            "name": "核心射线",
+            "type": "ranged",
+            "warningType": "line",
+            "warningTime": 1.5,
+            "damage": 20,
+            "cooldown": 6,
+            "projectileSpeed": 4,
+            "description": "核心射出缓慢但高伤害的能量射线"
+          },
+          {
+            "id": "shard_burst",
+            "name": "碎片爆发",
+            "type": "aoe",
+            "warningType": "circle",
+            "warningRadius": 6,
+            "warningTime": 1.0,
+            "damage": 12,
+            "cooldown": 4,
+            "description": "卷轴碎片向四周爆发"
+          }
+        ]
+      }
+    ],
+    "lawReveals": {
+      "phys_l0_focus": "暴露古籍核心的几何结构——看到卷轴内部的发光核心",
+      "phys_l1_predict": "纸页飞射的轨迹遵循匀变速规律——预判落点闪避",
+      "phys_l1_freefall": "卷轴横扫后重量失衡——利用自由落体从上方反击"
+    },
+    "dropTable": {
+      "kpReward": 50,
+      "lingShiReward": 20,
+      "materials": [
+        {
+          "id": "bamboo_piece",
+          "name": "竹片",
+          "count": 3,
+          "rarity": "rare"
+        },
+        {
+          "id": "paper_scrap",
+          "name": "纸屑",
+          "count": 10,
+          "rarity": "common"
+        }
+      ],
+      "lawPageReward": "phys_l2_spring"
+    }
   },
   "anxiety_mist": {
     "id": "anxiety_mist",
     "name": "焦虑·迷雾",
     "element": "焦虑",
-    "hp": 120,
-    "maxHP": 120,
+    "subjectDims": [
+      "生物",
+      "化学"
+    ],
+    "rank": 1,
+    "hp": 250,
+    "maxHP": 250,
     "weakness": "生物",
-    "attack": 12,
     "defense": 8,
     "zone": "south",
-    "rank": 1
+    "xinLi": 250,
+    "maxXinLi": 250,
+    "attack": 10,
+    "phases": [],
+    "dropTable": {
+      "kpReward": 60,
+      "lingShiReward": 25,
+      "materials": [],
+      "lawPageReward": ""
+    }
   },
   "fear_shadow": {
     "id": "fear_shadow",
     "name": "恐惧·暗影",
     "element": "恐惧",
+    "subjectDims": [
+      "数学",
+      "物理",
+      "英语"
+    ],
+    "rank": 2,
+    "xinLi": 300,
+    "maxXinLi": 300,
+    "attack": 15,
+    "phases": [],
+    "dropTable": {
+      "kpReward": 70,
+      "lingShiReward": 30,
+      "materials": [],
+      "lawPageReward": ""
+    },
     "hp": 150,
     "maxHP": 150,
     "weakness": "地理",
-    "attack": 15,
     "defense": 10,
-    "zone": "central",
-    "rank": 2
+    "zone": "central"
   },
   "pride_phantom": {
     "id": "pride_phantom",
     "name": "骄傲·幻象",
     "element": "骄傲",
+    "subjectDims": [
+      "九门贯通"
+    ],
+    "rank": 2,
+    "xinLi": 350,
+    "maxXinLi": 350,
+    "attack": 18,
+    "phases": [],
+    "dropTable": {
+      "kpReward": 80,
+      "lingShiReward": 40,
+      "materials": [],
+      "lawPageReward": ""
+    },
     "hp": 180,
     "maxHP": 180,
     "weakness": "化学",
-    "attack": 18,
     "defense": 12,
-    "zone": "central",
-    "rank": 2
+    "zone": "central"
   },
   "procrastination_wraith": {
     "id": "procrastination_wraith",
     "name": "拖延·亡灵",
     "element": "拖延",
+    "subjectDims": [],
+    "rank": 3,
+    "xinLi": 400,
+    "maxXinLi": 400,
+    "attack": 20,
+    "phases": [],
+    "dropTable": {
+      "kpReward": 100,
+      "lingShiReward": 50,
+      "materials": [],
+      "lawPageReward": ""
+    },
     "hp": 200,
     "maxHP": 200,
     "weakness": "地理",
-    "attack": 20,
     "defense": 15,
-    "zone": "north",
-    "rank": 3
+    "zone": "north"
   },
   "inferiority_beast": {
     "id": "inferiority_beast",
     "name": "自卑·巨兽",
     "element": "自卑",
+    "subjectDims": [],
+    "rank": 4,
+    "xinLi": 500,
+    "maxXinLi": 500,
+    "attack": 25,
+    "phases": [],
+    "dropTable": {
+      "kpReward": 120,
+      "lingShiReward": 60,
+      "materials": [],
+      "lawPageReward": ""
+    },
     "hp": 250,
     "maxHP": 250,
     "weakness": "生物",
-    "attack": 25,
     "defense": 18,
-    "zone": "northwest",
-    "rank": 4
+    "zone": "northwest"
   },
   "restlessness_storm": {
     "id": "restlessness_storm",
     "name": "浮躁·风暴",
     "element": "浮躁",
+    "subjectDims": [],
+    "rank": 5,
+    "xinLi": 600,
+    "maxXinLi": 600,
+    "attack": 30,
+    "phases": [],
+    "dropTable": {
+      "kpReward": 150,
+      "lingShiReward": 80,
+      "materials": [],
+      "lawPageReward": ""
+    },
     "hp": 300,
     "maxHP": 300,
     "weakness": "历史",
-    "attack": 30,
     "defense": 20,
-    "zone": "north",
-    "rank": 5
+    "zone": "north"
   }
 }

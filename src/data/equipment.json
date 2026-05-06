@@ -1,0 +1,182 @@
+{
+  "scrolls": [
+    {
+      "id": "scr_practice_book",
+      "name": "练习册",
+      "slot": "weapon",
+      "rarity": "common",
+      "kpReq": 0,
+      "mechanism": {
+        "type": "cultivation",
+        "trigger": "onWrongAnswer",
+        "effect": "修炼答错时记录错题。同类题型下次出现时限+3秒。",
+        "params": { "timeBonus": 3 }
+      },
+      "visualDesc": "白色方块几何体，答错时翻开一页"
+    },
+    {
+      "id": "scr_error_log",
+      "name": "错题集",
+      "slot": "weapon",
+      "rarity": "rare",
+      "kpReq": 30,
+      "mechanism": {
+        "type": "combat",
+        "trigger": "onBossDefeat",
+        "effect": "对同一BOSS每失败一次，永久伤害+5%（面板显示层数）",
+        "params": { "damageBonusPerFail": 5, "maxStacks": 10 }
+      },
+      "visualDesc": "蓝色封面+银色螺旋书脊，层数越多辉光越亮"
+    },
+    {
+      "id": "scr_champion_notes",
+      "name": "状元笔记",
+      "slot": "weapon",
+      "rarity": "legendary",
+      "kpReq": 80,
+      "mechanism": {
+        "type": "cultivation",
+        "trigger": "passive",
+        "effect": "修炼答题时限×1.5（从默认时限延长50%）",
+        "params": { "timeMultiplier": 1.5 }
+      },
+      "visualDesc": "金色辉光+全息投影书页"
+    }
+  ],
+  "armors": [
+    {
+      "id": "arm_uniform",
+      "name": "校服",
+      "slot": "armor",
+      "rarity": "common",
+      "kpReq": 10,
+      "mechanism": {
+        "type": "combat",
+        "trigger": "onDeath",
+        "effect": "每场战斗首次力竭时保留1心力（免死一次）",
+        "params": { "preserveHP": 1 }
+      },
+      "visualDesc": "标准蓝白几何校服"
+    },
+    {
+      "id": "arm_jacket",
+      "name": "学霸外套",
+      "slot": "armor",
+      "rarity": "rare",
+      "kpReq": 50,
+      "mechanism": {
+        "type": "combat",
+        "trigger": "onDodge",
+        "effect": "闪避时在起点留下一个几何假身，BOSS追击假身2秒",
+        "params": { "decoyDuration": 2 }
+      },
+      "visualDesc": "蓝色领口符文光+闪避时假身分裂动画"
+    },
+    {
+      "id": "arm_council",
+      "name": "学生会制服",
+      "slot": "armor",
+      "rarity": "epic",
+      "kpReq": 120,
+      "mechanism": {
+        "type": "team",
+        "trigger": "onTeammateDown",
+        "effect": "队友力竭时救援时间减半（1.5秒）且救援期间不受伤害",
+        "params": { "rescueTimeReduction": 50, "invincibleDuringRescue": true }
+      },
+      "visualDesc": "肩章紫色光纹+几何徽章"
+    },
+    {
+      "id": "arm_academy_robe",
+      "name": "学府长袍",
+      "slot": "armor",
+      "rarity": "legendary",
+      "kpReq": 200,
+      "mechanism": {
+        "type": "combat",
+        "trigger": "passive",
+        "effect": "战斗中每秒心力回复速度翻倍（0.5→1.0）",
+        "params": { "regenMultiplier": 2.0 }
+      },
+      "visualDesc": "袍角金色龙纹+环绕光点"
+    }
+  ],
+  "accessories": [
+    {
+      "id": "acc_draft_paper",
+      "name": "草稿纸",
+      "slot": "accessory",
+      "rarity": "common",
+      "kpReq": 0,
+      "mechanism": {
+        "type": "law",
+        "trigger": "passive",
+        "effect": "法则冷却时间-2秒",
+        "params": { "cooldownReduction": 2 }
+      },
+      "visualDesc": "皱巴巴的纸团，法则释放时展开"
+    },
+    {
+      "id": "acc_eraser",
+      "name": "橡皮",
+      "slot": "accessory",
+      "rarity": "common",
+      "kpReq": 5,
+      "mechanism": {
+        "type": "law",
+        "trigger": "passive",
+        "effect": "每条法则每场战斗可使用次数+1",
+        "params": { "extraUseCount": 1 }
+      },
+      "visualDesc": "白色方块，法则使用后缩小动画"
+    },
+    {
+      "id": "acc_ruler",
+      "name": "直尺",
+      "slot": "accessory",
+      "rarity": "rare",
+      "kpReq": 40,
+      "mechanism": {
+        "type": "law",
+        "trigger": "passive",
+        "effect": "非本学科法则激活时也能获得50%效果（跨学科惩罚减半）",
+        "params": { "crossSubjectMultiplier": 0.5 }
+      },
+      "visualDesc": "银色刻度发光"
+    },
+    {
+      "id": "acc_compass",
+      "name": "圆规",
+      "slot": "accessory",
+      "rarity": "epic",
+      "kpReq": 100,
+      "mechanism": {
+        "type": "synergy",
+        "trigger": "passive",
+        "effect": "法则连携判定窗口从2秒延长到3秒",
+        "params": { "synergyWindowExtension": 1 }
+      },
+      "visualDesc": "紫色旋转光环"
+    },
+    {
+      "id": "acc_calculator",
+      "name": "计算器",
+      "slot": "accessory",
+      "rarity": "legendary",
+      "kpReq": 180,
+      "mechanism": {
+        "type": "law",
+        "trigger": "onCooldown",
+        "effect": "冷却中的法则有15%概率立即可用（每次冷却完毕时判定）",
+        "params": { "instantResetChance": 15 }
+      },
+      "visualDesc": "全息投影屏+数字粒子环绕"
+    }
+  ],
+  "rarities": {
+    "common":    { "name": "普通", "color": "#CCCCCC", "mult": 1.0 },
+    "rare":      { "name": "稀有", "color": "#6495ED", "mult": 1.3 },
+    "epic":      { "name": "史诗", "color": "#9B59B6", "mult": 1.6 },
+    "legendary": { "name": "传说", "color": "#FF8C00", "mult": 2.0 }
+  }
+}

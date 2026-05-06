@@ -18,7 +18,13 @@ export class CombatUI {
   private playerHPBar!: HTMLDivElement;
   private playerHPText!: HTMLDivElement;
   private playerKPEl!: HTMLDivElement;
+  private playerMPBar!: HTMLDivElement;
+  private playerMPText!: HTMLDivElement;
   private questionTextEl!: HTMLDivElement;
+  private skillContainer!: HTMLDivElement;
+  private hitFlashEl!: HTMLDivElement;
+  private entranceEl!: HTMLDivElement;
+  private entranceTextEl!: HTMLDivElement;
   private subjectBadgeEl!: HTMLDivElement;
   private optionButtons: HTMLButtonElement[] = [];
   private timerTextEl!: HTMLDivElement;
@@ -32,6 +38,7 @@ export class CombatUI {
 
   // Subject color mapping
   private static SUBJECT_COLORS: Record<string, string> = {
+    '物理': '#c8a84e',
     '历史': '#f59e0b',
     '生物': '#10b981',
     '地理': '#3b82f6',
@@ -76,7 +83,8 @@ export class CombatUI {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(26, 18, 12, 0.94);
+  background: rgba(26, 18, 12, 0.65);
+  backdrop-filter: blur(4px);
   font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
   pointer-events: all;
   image-rendering: pixelated;
@@ -333,6 +341,84 @@ export class CombatUI {
   transition: background 0.2s;
 }
 .combat-result-btn:hover { background: #e0c060; }
+/* Skills bar */
+.combat-skills {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  justify-content: center;
+}
+.combat-skill-btn {
+  flex: 1;
+  padding: 8px 6px;
+  background: rgba(40, 25, 10, 0.95);
+  border: 2px solid #6b5a3e;
+  color: #c8a84e;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.1s;
+  font-family: inherit;
+}
+.combat-skill-btn:hover { border-color: #c8a84e; background: rgba(60, 40, 15, 0.95); }
+.combat-skill-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.combat-skill-btn .skill-icon { font-size: 16px; display: block; }
+.combat-skill-btn .skill-name { font-size: 11px; }
+.combat-skill-btn .skill-cd { font-size: 10px; color: #ef4444; }
+/* MP bar */
+.combat-player-mp-outer {
+  width: 120px;
+  height: 6px;
+  background: #1a1a2a;
+  border: 1px solid #3b82f6;
+  overflow: hidden;
+}
+.combat-player-mp-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 0.3s;
+}
+.combat-player-mp-text { font-size: 10px; color: #93c5fd; }
+/* Hit flash overlay */
+.combat-hit-flash {
+  position: fixed; inset: 0; z-index: 1001;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.15s;
+}
+.combat-hit-flash.correct { background: rgba(34,197,94,0.15); opacity: 1; }
+.combat-hit-flash.wrong { background: rgba(239,68,68,0.15); opacity: 1; }
+.combat-hit-flash.heal { background: rgba(96,165,250,0.15); opacity: 1; }
+/* Damage number popup */
+.combat-damage-number {
+  position: fixed; top: 40%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px; font-weight: bold; z-index: 1002;
+  pointer-events: none;
+  animation: dmgnum 1s ease-out forwards;
+}
+@keyframes dmgnum {
+  0% { opacity:1; transform: translate(-50%,-50%) scale(0.5); }
+  30% { opacity:1; transform: translate(-50%,-80%) scale(1.2); }
+  100% { opacity:0; transform: translate(-50%,-120%) scale(1); }
+}
+.combat-damage-number.dmg-correct { color: #4ade80; text-shadow: 0 0 10px #4ade80; }
+.combat-damage-number.dmg-heal { color: #60a5fa; text-shadow: 0 0 10px #60a5fa; }
+/* Entrance animation */
+.combat-entrance {
+  animation: entrance 0.5s ease-out;
+}
+@keyframes entrance {
+  0% { opacity:0; transform: scale(1.5); filter: blur(8px); }
+  100% { opacity:1; transform: scale(1); filter: blur(0); }
+}
+.combat-entrance-text {
+  animation: entranceText 0.6s ease-out;
+}
+@keyframes entranceText {
+  0% { opacity:0; transform: translateY(-20px); }
+  100% { opacity:1; transform: translateY(0); }
+}
 </style>
 <div class="combat-inner">
   <div class="combat-top">
@@ -347,6 +433,8 @@ export class CombatUI {
     <div class="combat-player-stats">
       <div class="combat-player-hp-outer"><div class="combat-player-hp-inner" id="combat-player-hp-bar"></div></div>
       <div class="combat-player-hp-text" id="combat-player-hp-text">HP 100/100</div>
+      <div class="combat-player-mp-outer"><div class="combat-player-mp-inner" id="combat-player-mp-bar"></div></div>
+      <div class="combat-player-mp-text" id="combat-player-mp-text">MP 50/50</div>
       <div class="combat-player-kp">KP <span id="combat-player-kp">0</span></div>
     </div>
   </div>
@@ -365,8 +453,13 @@ export class CombatUI {
     <button class="combat-option-btn" data-index="2"><span class="combat-option-label">C</span><span class="combat-option-text"></span></button>
     <button class="combat-option-btn" data-index="3"><span class="combat-option-label">D</span><span class="combat-option-text"></span></button>
   </div>
+  <div class="combat-skills" id="combat-skills"></div>
 </div>
 <div class="combat-combo" id="combat-combo"></div>
+<div class="combat-hit-flash" id="combat-hit-flash"></div>
+<div class="combat-entrance" id="combat-entrance" style="display:none">
+  <div class="combat-entrance-text" id="combat-entrance-text"></div>
+</div>
 <div class="combat-result" id="combat-result">
   <div class="combat-result-title" id="combat-result-title"></div>
   <div id="combat-result-stats"></div>
@@ -383,7 +476,13 @@ export class CombatUI {
     this.playerHPBar = el.querySelector('#combat-player-hp-bar')!;
     this.playerHPText = el.querySelector('#combat-player-hp-text')!;
     this.playerKPEl = el.querySelector('#combat-player-kp')!;
+    this.playerMPBar = el.querySelector('#combat-player-mp-bar')!;
+    this.playerMPText = el.querySelector('#combat-player-mp-text')!;
     this.questionTextEl = el.querySelector('#combat-question-text')!;
+    this.skillContainer = el.querySelector('#combat-skills')!;
+    this.hitFlashEl = el.querySelector('#combat-hit-flash')!;
+    this.entranceEl = el.querySelector('#combat-entrance')!;
+    this.entranceTextEl = el.querySelector('#combat-entrance-text')!;
     this.subjectBadgeEl = el.querySelector('#combat-subject-badge')!;
     this.timerTextEl = el.querySelector('#combat-timer-text')!;
     this.timerCircleEl = el.querySelector('.combat-timer-circle')!;
@@ -422,6 +521,16 @@ export class CombatUI {
   show(): void {
     this.container.style.display = 'flex';
     this.hideResult();
+    // Entrance animation
+    const state = this.combatManager.getState();
+    if (state.demon) {
+      this.entranceTextEl.textContent = `${state.demon.element} · ${state.demon.name} 袭来!`;
+      this.entranceEl.style.display = 'flex';
+      this.entranceEl.classList.remove('combat-entrance');
+      void this.entranceEl.offsetWidth; // reflow
+      this.entranceEl.classList.add('combat-entrance');
+      setTimeout(() => { this.entranceEl.style.display = 'none'; }, 1500);
+    }
     this.startRefresh();
   }
 
@@ -431,6 +540,17 @@ export class CombatUI {
   hide(): void {
     this.container.style.display = 'none';
     this.stopRefresh();
+  }
+
+  /**
+   * Destroy the combat UI and release all DOM resources.
+   */
+  destroy(): void {
+    this.stopRefresh();
+    this.resultCallback = null;
+    if (this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
   }
 
   /**
@@ -516,6 +636,11 @@ export class CombatUI {
     // Player KP
     this.playerKPEl.textContent = String(state.score > 0 ? Math.round(state.score / 10) : 0);
 
+    // Player MP
+    const mpRatio = state.playerMP > 0 ? state.playerMP / 50 : 0;
+    this.playerMPBar.style.width = `${Math.min(100, mpRatio * 100)}%`;
+    this.playerMPText.textContent = `MP ${state.playerMP}/50`;
+
     // Timer
     this.timerTextEl.textContent = String(state.timer);
     if (state.timer <= 5) {
@@ -527,7 +652,6 @@ export class CombatUI {
     // Question
     if (state.question) {
       const subject = state.question.subject;
-      console.log(`[UI] q#${state.questionIndex} subject=${subject} processing=${state.isProcessing}`);
       this.subjectBadgeEl.textContent = `【${subject}】`;
       this.subjectBadgeEl.style.color = CombatUI.SUBJECT_COLORS[subject] ?? '#ffffff';
       this.questionTextEl.textContent = state.question.text;
@@ -563,7 +687,59 @@ export class CombatUI {
       this.comboTextEl.className = 'combat-combo count-0';
     }
 
+    // Skills
+    this.renderSkills(state);
+
+    // Hit effects
+    if (state.hitEffect) {
+      this.showHitEffect(state.hitEffect, state.hitAmount);
+    }
+
     // Check for game over — handled by main.ts callback, not auto-detected
+  }
+
+  private renderSkills(state: CombatManagerState): void {
+    if (!state.skills || state.skills.length === 0) {
+      this.skillContainer.innerHTML = '';
+      return;
+    }
+    const mp = state.playerMP;
+    let html = '';
+    for (const skill of state.skills) {
+      const cd = state.cooldowns?.[skill.id];
+      const onCD = cd && cd.remaining > 0;
+      const noMP = mp < skill.mpCost;
+      const disabled = state.isProcessing || onCD || noMP;
+      const cdText = onCD ? `CD:${cd?.remaining}` : '';
+      html += `<button class="combat-skill-btn" data-skill="${skill.id}" ${disabled ? 'disabled' : ''}>
+        <span class="skill-icon">${skill.icon}</span>
+        <span class="skill-name">${skill.name}</span>
+        ${cdText ? `<span class="skill-cd">${cdText}</span>` : `<span class="skill-cd">${skill.mpCost}MP</span>`}
+      </button>`;
+    }
+    this.skillContainer.innerHTML = html;
+    // Bind skill clicks
+    this.skillContainer.querySelectorAll('.combat-skill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const skillId = (btn as HTMLElement).dataset.skill!;
+        this.combatManager.useSkill(skillId);
+      });
+    });
+  }
+
+  private showHitEffect(effect: string, amount: number): void {
+    // Flash overlay
+    this.hitFlashEl.className = 'combat-hit-flash ' + effect;
+    setTimeout(() => { this.hitFlashEl.className = 'combat-hit-flash'; }, 300);
+
+    // Damage number popup
+    if (amount > 0) {
+      const num = document.createElement('div');
+      num.className = 'combat-damage-number ' + (effect === 'heal' ? 'dmg-heal' : 'dmg-correct');
+      num.textContent = effect === 'heal' ? `+${amount}` : `-${amount}`;
+      document.body.appendChild(num);
+      setTimeout(() => num.remove(), 1000);
+    }
   }
 
   private onGameOver(state: CombatManagerState): void {
@@ -577,6 +753,7 @@ export class CombatUI {
       totalQuestions: state.totalQuestions,
       maxCombo: state.maxCombo,
       kpEarned,
+      lingShiEarned: 0,
     };
 
     const demonName = state.demon?.name ?? '心魔';

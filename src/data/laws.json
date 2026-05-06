@@ -1,0 +1,172 @@
+{
+  "physics": [
+    {
+      "id": "phys_l0_focus",
+      "name": "质点聚焦",
+      "subject": "物理",
+      "tier": "L0",
+      "chapter": "必修一 §1.1 质点模型",
+      "kpReq": 0,
+      "cost": 5,
+      "cooldown": 8,
+      "effectType": "visualInfo",
+      "effectDesc": "镜头拉近BOSS核心，暴露结构细节——核心几何体线框高亮",
+      "effectParams": {
+        "zoomDistance": 5,
+        "highlightDuration": 5,
+        "highlightColor": "#4A90D9"
+      },
+      "visualDesc": "蓝色线框高亮BOSS核心几何体",
+      "formula": "无特定公式 —— 概念性法则",
+      "concept": "当物体的大小和形状对研究问题的影响可以忽略时，将物体视为一个有质量的点，称为质点。这是一种理想化模型，能简化复杂问题的分析。",
+      "realWorld": "计算地球绕太阳公转时，地球可视为质点；但研究地球自转时则不能。",
+      "tacticalHint": "战斗开始时释放，观察BOSS弱点结构后再选择克星法则",
+      "mnemonic": "「质点不占空间，聚焦突破点」"
+    },
+    {
+      "id": "phys_l1_predict",
+      "name": "匀变预判",
+      "subject": "物理",
+      "tier": "L1",
+      "chapter": "必修一 §2.2 匀变速直线运动",
+      "kpReq": 5,
+      "cost": 10,
+      "cooldown": 10,
+      "effectType": "prediction",
+      "effectDesc": "地面显示BOSS下一移动落点的预测箭头",
+      "effectParams": {
+        "predictTime": 1.5,
+        "arrowColor": "#4A90D9",
+        "arrowLength": 3
+      },
+      "visualDesc": "地面蓝色几何箭头指向BOSS预测落点",
+      "formula": "v = v₀ + at",
+      "concept": "匀变速直线运动是加速度恒定的运动。速度公式 v=v₀+at 描述了任意时刻的速度。位移公式 x=v₀t+½at² 描述了位置随时间的变化。这是高中物理运动学的基础。",
+      "realWorld": "汽车刹车（匀减速）、自由落体（匀加速）都是匀变速运动的实例。",
+      "tacticalHint": "BOSS冲刺或跳跃前使用，提前走位避开攻击范围",
+      "mnemonic": "「初速加 a 乘 t，落点预判如神机」"
+    },
+    {
+      "id": "phys_l1_freefall",
+      "name": "自由落体",
+      "subject": "物理",
+      "tier": "L1",
+      "chapter": "必修一 §2.4 自由落体运动",
+      "kpReq": 5,
+      "cost": 12,
+      "cooldown": 15,
+      "effectType": "aoe",
+      "effectDesc": "跃起后下落速度递增，落地造成六边形冲击波",
+      "effectParams": {
+        "fallTime": 1.0,
+        "impactRadius": 4,
+        "baseDamage": 30,
+        "speedMultiplier": 1.5
+      },
+      "visualDesc": "角色跃起→加速下落→地面六边形冲击波扩散",
+      "formula": "h = ½gt² ， v = gt",
+      "concept": "物体只在重力作用下从静止开始下落的运动。所有物体在忽略空气阻力时，自由落体的加速度都相同（g≈9.8m/s²），与质量无关。伽利略通过斜面实验推翻了亚里士多德'重物落得快'的错误观点。",
+      "realWorld": "跳伞初期的自由下落阶段、锤子和羽毛在真空管中同时落地",
+      "tacticalHint": "BOSS释放大范围技能时跃起躲避，落地反击造成AOE伤害",
+      "mnemonic": "「下落加速 g 倍 t，砸地冲击波如锤」"
+    },
+    {
+      "id": "phys_l2_spring",
+      "name": "弹力反震",
+      "subject": "物理",
+      "tier": "L2",
+      "chapter": "必修一 §3.2 弹力",
+      "kpReq": 25,
+      "cost": 8,
+      "cooldown": 12,
+      "effectType": "counter",
+      "effectDesc": "BOSS近战命中时被弹开——弹簧几何体弹出动画",
+      "effectParams": {
+        "knockbackDistance": 5,
+        "stunDuration": 1.5
+      },
+      "visualDesc": "弹簧几何体从玩家身上弹出，击退BOSS",
+      "formula": "F = kx（胡克定律）",
+      "concept": "发生弹性形变的物体，会对使它形变的物体产生一个恢复原状的力，这就是弹力。胡克定律：弹簧的弹力 F 与形变量 x 成正比，比例系数 k 叫劲度系数。弹力的方向总是指向恢复原状的方向。",
+      "realWorld": "弹簧秤测重量、汽车减震弹簧、弓箭的弹性势能转化",
+      "tacticalHint": "在BOSS连击时使用，打断连招并创造反击窗口",
+      "mnemonic": "「形变越大反弹越狠，胡克定律击退敌人」"
+    },
+    {
+      "id": "phys_l2_friction",
+      "name": "摩擦场",
+      "subject": "物理",
+      "tier": "L2",
+      "chapter": "必修一 §3.3 摩擦力",
+      "kpReq": 25,
+      "cost": 8,
+      "cooldown": 14,
+      "effectType": "zone",
+      "effectDesc": "地面生成橙色六边形摩擦区，BOSS移速-40%",
+      "effectParams": {
+        "zoneRadius": 6,
+        "slowPercent": 40,
+        "duration": 5
+      },
+      "visualDesc": "橙色半透明六边形地面区域，BOSS在其中减速",
+      "formula": "f = μN（滑动摩擦力）",
+      "concept": "摩擦力分为静摩擦力和滑动摩擦力。滑动摩擦力 f=μN，与正压力成正比，与接触面积无关（宏观上）。摩擦力方向总与相对运动方向相反，是阻碍相对运动的力，但不一定是阻力——走路时摩擦力就是动力。",
+      "realWorld": "刹车片利用摩擦力减速、鞋底花纹增大摩擦、冰面摩擦力小容易滑倒",
+      "tacticalHint": "在BOSS狂暴阶段铺设，给自己争取恢复才气的时间",
+      "mnemonic": "「压力乘 μ 就是摩擦，减速场中BOSS爬」"
+    },
+    {
+      "id": "phys_l3_fma",
+      "name": "精确打击",
+      "subject": "物理",
+      "tier": "L3",
+      "chapter": "必修一 §4.3 牛顿第二定律",
+      "kpReq": 60,
+      "cost": 15,
+      "cooldown": 18,
+      "effectType": "critical",
+      "effectDesc": "BOSS头顶显示质量数字，玩家速度×质量=暴击倍率",
+      "effectParams": {
+        "windowDuration": 1.5,
+        "minMultiplier": 2,
+        "maxMultiplier": 5
+      },
+      "visualDesc": "BOSS头顶金色质量数字，命中时金色光柱爆发",
+      "formula": "F = ma",
+      "concept": "牛顿第二定律是经典力学的核心：物体的加速度 a 与所受合外力 F 成正比，与质量 m 成反比，加速度方向与合外力方向相同。注意：F=ma 中的 F 是合外力，a 是瞬时加速度，两者方向始终一致。",
+      "realWorld": "用同样的力推购物车（满载→加速慢）和推空车（加速快）、火箭发射时燃料消耗质量减小加速增大",
+      "tacticalHint": "冲刺加速后使用，速度越快暴击倍率越高，主输出技能",
+      "mnemonic": "「力是质量乘加速，快跑暴击猛如虎」"
+    },
+    {
+      "id": "phys_l3_inertia",
+      "name": "惯性闪避",
+      "subject": "物理",
+      "tier": "L3",
+      "chapter": "必修一 §4.1 牛顿第一定律",
+      "kpReq": 60,
+      "cost": 6,
+      "cooldown": 6,
+      "effectType": "buff",
+      "effectDesc": "闪避后3秒内移速持续+30%，身后留蓝色残影轨迹",
+      "effectParams": {
+        "speedBoost": 30,
+        "duration": 3
+      },
+      "visualDesc": "蓝色几何残影留在身后，移速箭头指示加速方向",
+      "formula": "无特定公式 —— 概念性法则",
+      "concept": "一切物体总保持匀速直线运动状态或静止状态，除非作用在它上面的力迫使它改变这种状态。惯性是物体的固有属性，只与质量有关——质量越大惯性越大，运动状态越难改变。",
+      "realWorld": "乘车急刹车时乘客前倾（身体保持原来速度）、抖落雨伞上的水珠、宇航员在太空中推一下能飘很远",
+      "tacticalHint": "闪避后立即获得加速，配合精确打击打出最大暴击倍率",
+      "mnemonic": "「物有惯性不愿停，闪避加速脚下轻」"
+    }
+  ],
+  "biology": [],
+  "chemistry": [],
+  "geography": [],
+  "math": [],
+  "english": [],
+  "chinese": [],
+  "politics": [],
+  "history": []
+}

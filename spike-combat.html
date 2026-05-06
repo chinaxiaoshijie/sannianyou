@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Combat Spike — 三年游</title>
+<style>
+  body { margin:0; overflow:hidden; background:#1a1a2e; font-family: sans-serif; }
+  #hud { position:fixed; top:16px; left:16px; color:#fff; font-size:14px; pointer-events:none; }
+  #hud .hit { color:#4f4; } #hud .miss { color:#f44; }
+  #log { position:fixed; bottom:16px; left:16px; color:#aaa; font-size:12px; max-height:120px; overflow-y:auto; }
+  #instructions { position:fixed; bottom:16px; right:16px; color:#888; font-size:11px; text-align:right; }
+</style>
+</head>
+<body>
+<div id="hud">道心: <span id="hp">100</span> | 闪避CD: <span id="dodgeCd">0.0</span></div>
+<div id="log"></div>
+<div id="instructions">WASD移动 | 空格闪避 | 点击开始</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ── Scene ──
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf0d8c8);
+scene.fog = new THREE.FogExp2(0xf0d8c8, 0.003);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+// ── Camera (ortho top-down) ──
+const aspect = window.innerWidth / window.innerHeight;
+const frustumSize = 30;
+const camera = new THREE.OrthographicCamera(
+  -frustumSize * aspect / 2, frustumSize * aspect / 2,
+  frustumSize / 2, -frustumSize / 2, 0.1, 200
+);
+camera.position.set(0, 25, 10);
+camera.lookAt(0, 0, 4);
+
+// ── Ground ──
+const groundGeo = new THREE.PlaneGeometry(40, 30);
+const groundMat = new THREE.MeshToonMaterial({ color: 0xc8b898 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = 0;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ── Light ──
+const ambient = new THREE.AmbientLight(0xffeedd, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5e8, 2);
+sun.position.set(10, 15, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+scene.add(sun);
+
+// ── Player ──
+const playerGeo = new THREE.CylinderGeometry(0.3, 0.35, 1.2, 8);
+const playerMat = new THREE.MeshToonMaterial({ color: 0x2244aa });
+const player = new THREE.Mesh(playerGeo, playerMat);
+player.position.set(0, 0.6, 8);
+player.castShadow = true;
+scene.add(player);
+
+// ── BOSS ──
+const bossGroup = new THREE.Group();
+const bossBody = new THREE.BoxGeometry(2, 1.5, 0.6);
+const bossMesh = new THREE.Mesh(bossBody, new THREE.MeshToonMaterial({ color: 0xd4a574 }));
+bossMesh.position.y = 0.75;
+bossMesh.castShadow = true;
+bossGroup.add(bossMesh);
+
+// Core (glowing)
+const coreGeo = new THREE.SphereGeometry(0.35, 8, 6);
+const coreMat = new THREE.MeshBasicMaterial({ color: 0xff8844 });
+const core = new THREE.Mesh(coreGeo, coreMat);
+core.position.y = 1.2;
+bossGroup.add(core);
+
+bossGroup.position.set(0, 0, 0);
+scene.add(bossGroup);
+
+// ── Warning geometry ──
+let warningMesh = null;
+const warningMat = new THREE.MeshBasicMaterial({
+  color: 0xff3333, transparent: true, opacity: 0.5, depthWrite: false
+});
+
+function createFanWarning(angle, range) {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  const steps = 16;
+  for (let i = 0; i <= steps; i++) {
+    const a = -angle/2 + (angle * i / steps);
+    shape.lineTo(Math.cos(a) * range, Math.sin(a) * range);
+  }
+  shape.closePath();
+  const geo = new THREE.ShapeGeometry(shape);
+  return new THREE.Mesh(geo, warningMat.clone());
+}
+
+function createCircleWarning(radius) {
+  const geo = new THREE.RingGeometry(0.2, radius, 32);
+  const mat = warningMat.clone();
+  mat.side = THREE.DoubleSide;
+  return new THREE.Mesh(geo, mat);
+}
+
+function createLineWarning(length) {
+  const geo = new THREE.PlaneGeometry(0.3, length);
+  return new THREE.Mesh(geo, warningMat.clone());
+}
+
+// ── State ──
+let playerHP = 100;
+let dodgeCooldown = 0;
+const DODGE_DURATION = 0.2;
+const DODGE_CD = 1.5;
+let isDodging = false;
+let dodgeTimer = 0;
+
+let bossAttackTimer = 0;
+const BOSS_ATTACK_INTERVAL = 2.5;
+let activeWarning = null;
+let warningTimer = 0;
+const WARNING_DURATION = 0.8;
+let warningData = null;
+
+let gameRunning = false;
+
+const keys = {};
+window.addEventListener('keydown', (e) => { keys[e.code] = true; e.preventDefault(); });
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+// Start on click
+window.addEventListener('click', () => { gameRunning = true; document.getElementById('instructions').textContent = 'WASD移动 | 空格闪避'; });
+
+function log(msg, cls = '') {
+  const el = document.getElementById('log');
+  el.innerHTML += `<div class="${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+  if (el.children.length > 8) el.removeChild(el.firstChild);
+}
+
+// ── Attack types ──
+const attackTypes = [
+  {
+    name: '扇形横扫', type: 'fan', angle: Math.PI / 2, range: 5,
+    createWarning: () => createFanWarning(Math.PI / 2, 5),
+    checkHit: (px, pz, bx, bz) => {
+      const dx = px - bx, dz = pz - bz;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+      const angle = Math.atan2(dx, dz);
+      return dist < 5 && Math.abs(angle) < Math.PI / 4;
+    }
+  },
+  {
+    name: '纸页飞射', type: 'line', length: 12,
+    createWarning: () => createLineWarning(12),
+    checkHit: (px, pz, bx, bz) => {
+      return Math.abs(px - bx) < 0.5 && pz > bz && pz < bz + 12;
+    }
+  },
+  {
+    name: '圆形爆发', type: 'circle', radius: 3,
+    createWarning: () => createCircleWarning(3),
+    checkHit: (px, pz, bx, bz) => {
+      return Math.sqrt((px-bx)**2 + (pz-bz)**2) < 3;
+    }
+  }
+];
+
+// ── Game loop ──
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+
+  if (!gameRunning) { renderer.render(scene, camera); return; }
+
+  // ── Player movement ──
+  const speed = 8;
+  if (keys['KeyW']) player.position.z -= speed * dt;
+  if (keys['KeyS']) player.position.z += speed * dt;
+  if (keys['KeyA']) player.position.x -= speed * dt;
+  if (keys['KeyD']) player.position.x += speed * dt;
+
+  // Clamp
+  player.position.x = Math.max(-18, Math.min(18, player.position.x));
+  player.position.z = Math.max(-12, Math.min(12, player.position.z));
+
+  // ── Dodge ──
+  if (dodgeCooldown > 0) dodgeCooldown = Math.max(0, dodgeCooldown - dt);
+  if (isDodging) {
+    dodgeTimer -= dt;
+    player.material.opacity = 0.5 + Math.sin(dodgeTimer * 30) * 0.3;
+    if (dodgeTimer <= 0) {
+      isDodging = false;
+      player.material.opacity = 1;
+    }
+  }
+  if (keys['Space'] && !isDodging && dodgeCooldown <= 0) {
+    isDodging = true;
+    dodgeTimer = DODGE_DURATION;
+    dodgeCooldown = DODGE_CD;
+  }
+
+  // ── BOSS attack ──
+  bossAttackTimer -= dt;
+  if (activeWarning) {
+    warningTimer -= dt;
+    if (warningTimer <= 0) {
+      // Attack fires
+      const bx = bossGroup.position.x, bz = bossGroup.position.z;
+      const px = player.position.x, pz = player.position.z;
+      
+      if (!isDodging && warningData.checkHit(px, pz, bx, bz)) {
+        playerHP -= 15;
+        log(`💥 被「${warningData.name}」命中！-15 心力 (${playerHP})`, 'miss');
+      } else if (isDodging) {
+        log(`✨ 闪避！躲开了「${warningData.name}」`, 'hit');
+      } else {
+        log(`👣 躲开了「${warningData.name}」`, 'hit');
+      }
+
+      // Remove warning
+      if (warningMesh) { scene.remove(warningMesh); warningMesh = null; }
+      activeWarning = false;
+      warningData = null;
+      bossAttackTimer = BOSS_ATTACK_INTERVAL;
+    }
+  }
+
+  if (bossAttackTimer <= 0 && !activeWarning) {
+    // Pick random attack
+    const atk = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+    warningData = atk;
+    activeWarning = true;
+    warningTimer = WARNING_DURATION;
+
+    // Create warning geometry
+    warningMesh = atk.createWarning();
+    warningMesh.rotation.x = -Math.PI / 2;
+    warningMesh.position.copy(bossGroup.position);
+    warningMesh.position.y = 0.02;
+    scene.add(warningMesh);
+
+    log(`⚠️ 预警：「${atk.name}」— ${WARNING_DURATION}秒后判定`, '');
+  }
+
+  // ── HUD ──
+  document.getElementById('hp').textContent = playerHP;
+  document.getElementById('dodgeCd').textContent = dodgeCooldown.toFixed(1);
+
+  if (playerHP <= 0) {
+    log('🪦 力竭。刷新页面重试。', 'miss');
+    gameRunning = false;
+  }
+
+  // ── Core pulse ──
+  core.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.15);
+
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

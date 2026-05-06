@@ -38,8 +38,8 @@ export class Player {
 
   constructor() {
     this.mesh = this.createModel();
-    // Spawn on the road between gate and bridge (gate at z=-68, bridge at z=-61)
-    this.mesh.position.set(64, 0, -65);
+    // Spawn at gate entrance (z=-69), safely outside library BOSS trigger (x=74, z=-35)
+    this.mesh.position.set(64, 0, -69);
   }
 
   /* ────── Low-poly character model (Kenney-style) ────── */

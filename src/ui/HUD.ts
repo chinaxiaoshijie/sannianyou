@@ -21,6 +21,9 @@ export class HUD {
   private interactionPromptEl!: HTMLDivElement;
   private saveIndicatorEl!: HTMLDivElement;
 
+  // Last interaction prompt text (to avoid per-frame dom writes + log spam)
+  private lastPromptText = '';
+
   // Event cleanup
   private boundOnPlayerChanged: (data: unknown) => void;
   private boundOnGameChanged: (data: unknown) => void;
@@ -142,6 +145,25 @@ export class HUD {
   color: rgba(200,168,78,0.8);
   text-shadow: 0 0 8px rgba(200,168,78,0.3);
 }
+/* Top-right: compass */
+.hud-compass {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  pointer-events: all;
+  transition: transform 0.15s;
+}
+.hud-compass:hover { transform: scale(1.15); }
+.hud-compass:active { transform: scale(0.95); }
+.hud-compass-n { font-size: 12px; color: #ef4444; font-weight: bold; }
+.hud-compass-ew { font-size: 10px; color: #9ca3af; display: flex; gap: 16px; }
+.hud-compass-s { font-size: 10px; color: #9ca3af; }
+.hud-compass-dir { font-size: 10px; color: #c8a84e; margin-top: 2px; }
 /* Bottom-center: interaction prompt */
 .hud-interact {
   position: fixed;
@@ -198,6 +220,11 @@ export class HUD {
   </div>
 </div>
 <div class="hud-zone" id="hud-zone">启程之门</div>
+<div class="hud-compass" id="hud-compass">
+  <span class="hud-compass-n">▲ N</span>
+  <span class="hud-compass-ew"><span>W</span><span>E</span></span>
+  <span class="hud-compass-s">▼ S</span>
+</div>
 <div class="hud-interact" id="hud-interact"></div>
 <div class="hud-save-indicator" id="hud-save-indicator">💾 游戏已保存!</div>
 `;
@@ -231,13 +258,13 @@ export class HUD {
     this.rankEl.textContent = player.rank;
     this.kpEl.textContent = String(player.kp);
 
-    const hpRatio = Math.max(0, player.hp / this.hpBase);
+    const hpRatio = Math.max(0, player.xinLi / this.hpBase);
     this.hpBar.style.width = `${hpRatio * 100}%`;
-    this.hpText.textContent = `${player.hp}/${this.hpBase}`;
+    this.hpText.textContent = `${player.xinLi}/${this.hpBase}`;
 
-    const mpRatio = Math.max(0, player.mp / this.mpBase);
+    const mpRatio = Math.max(0, player.caiQi / this.mpBase);
     this.mpBar.style.width = `${mpRatio * 100}%`;
-    this.mpText.textContent = `${player.mp}/${this.mpBase}`;
+    this.mpText.textContent = `${player.caiQi}/${this.mpBase}`;
   }
 
   private refreshGame(game: GameState): void {
@@ -255,7 +282,8 @@ export class HUD {
    * Show/hide the interaction prompt.
    */
   setInteractionPrompt(text: string): void {
-    console.log(`[HUD] setInteractionPrompt: "${text}" el=${!!this.interactionPromptEl} v=${this.interactionPromptEl?.classList.contains('visible')}`);
+    if (text === this.lastPromptText) return; // skip if unchanged
+    this.lastPromptText = text;
     if (text) {
       this.interactionPromptEl.textContent = text;
       this.interactionPromptEl.classList.add('visible');

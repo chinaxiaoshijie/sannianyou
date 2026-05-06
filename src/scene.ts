@@ -5,221 +5,96 @@ import zonesData from './data/zones.json';
 const MAP_SCALE = 10;
 const GROUND_W = 128;
 const GROUND_H = 72;
-const BLOCK = 1; // Minecraft block = 1 world unit
 
-/* ===== Minecraft-style procedural textures (32x32) ===== */
-function createBlockTexture(
-  baseColor: string,
-  pattern: 'solid' | 'noise' | 'brick' | 'planks' | 'glass' | 'grass_side' | 'grass_top' | 'stone_brick' | 'roof' = 'solid',
-  accentColor?: string,
-): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = 32; c.height = 32;
-  const ctx = c.getContext('2d')!;
-
-  // Base fill
-  ctx.fillStyle = baseColor;
-  ctx.fillRect(0, 0, 32, 32);
-
-  const darker = (hex: string, amt: number) => {
-    const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amt);
-    const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amt);
-    const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amt);
-    return `rgb(${r},${g},${b})`;
-  };
-
-  const lighter = (hex: string, amt: number) => {
-    const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amt);
-    const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amt);
-    const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amt);
-    return `rgb(${r},${g},${b})`;
-  };
-
-  if (pattern === 'noise') {
-    for (let i = 0; i < 120; i++) {
-      ctx.fillStyle = darker(baseColor, Math.random() * 30);
-      ctx.fillRect(Math.random() * 32, Math.random() * 32, 2, 2);
-    }
-  } else if (pattern === 'brick') {
-    // Brick pattern
-    for (let row = 0; row < 8; row++) {
-      const offset = row % 2 === 0 ? 0 : 8;
-      for (let col = -1; col < 5; col++) {
-        const x = col * 16 + offset;
-        const y = row * 4;
-        ctx.fillStyle = accentColor ?? baseColor;
-        ctx.fillRect(x, y, 15, 3);
-        // Mortar lines
-        ctx.fillStyle = darker(baseColor, 15);
-        ctx.fillRect(x, y, 15, 1);
-        ctx.fillRect(x, y + 3, 15, 1);
-      }
-    }
-  } else if (pattern === 'planks') {
-    for (let y = 0; y < 32; y += 4) {
-      ctx.fillStyle = darker(baseColor, 10 + Math.random() * 15);
-      ctx.fillRect(0, y, 32, 2);
-      ctx.fillStyle = lighter(baseColor, 5 + Math.random() * 10);
-      ctx.fillRect(0, y + 2, 32, 2);
-    }
-  } else if (pattern === 'glass') {
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(0, 0, 32, 32);
-    // Cross pattern
-    ctx.strokeStyle = lighter(baseColor, 60);
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, 31, 31);
-    ctx.beginPath();
-    ctx.moveTo(0, 0); ctx.lineTo(32, 32);
-    ctx.moveTo(32, 0); ctx.lineTo(0, 32);
-    ctx.stroke();
-  } else if (pattern === 'grass_top') {
-    // Dark base then green top
-    ctx.fillStyle = '#6b4c30';
-    ctx.fillRect(0, 0, 32, 32);
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(0, 0, 32, 32);
-    for (let i = 0; i < 80; i++) {
-      ctx.fillStyle = darker(baseColor, Math.random() * 20);
-      ctx.fillRect(Math.random() * 32, Math.random() * 32, 1, 1);
-    }
-  } else if (pattern === 'grass_side') {
-    ctx.fillStyle = '#6b4c30';
-    ctx.fillRect(0, 0, 32, 32);
-    // Dirt texture
-    for (let i = 0; i < 60; i++) {
-      ctx.fillStyle = darker('#6b4c30', Math.random() * 20);
-      ctx.fillRect(Math.random() * 32, Math.random() * 32, 2, 2);
-    }
-    // Green top 4px
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(0, 0, 32, 4);
-    for (let i = 0; i < 15; i++) {
-      ctx.fillStyle = darker(baseColor, Math.random() * 15);
-      ctx.fillRect(Math.random() * 32, Math.random() * 3, 1, 1);
-    }
-  } else if (pattern === 'stone_brick') {
-    // Brick-like stone pattern
-    const rows = 4;
-    for (let r = 0; r < rows; r++) {
-      const y = r * 8;
-      const off = r % 2 === 0 ? 0 : 8;
-      for (let c = -1; c < 5; c++) {
-        const x = c * 16 + off;
-        ctx.fillStyle = accentColor ?? baseColor;
-        ctx.fillRect(x + 1, y + 1, 14, 7);
-        ctx.strokeStyle = darker(baseColor, 30);
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, 16, 8);
-      }
-    }
-  } else if (pattern === 'roof') {
-    // Stair-like roof pattern
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(0, 0, 32, 32);
-    for (let y = 0; y < 32; y += 4) {
-      ctx.fillStyle = darker(baseColor, 10);
-      ctx.fillRect(0, y, 32, 2);
-      ctx.fillStyle = lighter(baseColor, 10);
-      ctx.fillRect(0, y + 2, 32, 2);
-    }
-  }
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.magFilter = THREE.NearestFilter;
-  tex.minFilter = THREE.NearestFilter;
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-// Texture palette
-const TEX = {
-  grass_top: createBlockTexture('#70b04a', 'grass_top'),
-  grass_side: createBlockTexture('#70b04a', 'grass_side'),
-  stone: createBlockTexture('#7a7a7a', 'noise'),
-  stone_brick: createBlockTexture('#828282', 'stone_brick', '#6e6e6e'),
-  wood: createBlockTexture('#b8905a', 'planks'),
-  brick: createBlockTexture('#a05040', 'brick', '#904030'),
-  glass: createBlockTexture('#a0c8e8', 'glass'),
-  sandstone: createBlockTexture('#d4b896', 'noise'),
-  sandstone_smooth: createBlockTexture('#e0c8a0', 'solid'),
-  roof: createBlockTexture('#803030', 'roof'),
-  concrete: createBlockTexture('#c8c8c8', 'noise'),
-  dark_stone: createBlockTexture('#505050', 'noise'),
-  oak_wood: createBlockTexture('#8a6030', 'planks'),
-  leaves: createBlockTexture('#4a8030', 'noise'),
-  leaves_dark: createBlockTexture('#306020', 'noise'),
-  lamp_glow: createBlockTexture('#fff8c0', 'solid'),
+/* ===== Monument Valley pastel palette ===== */
+const PALETTE = {
+  coral:    0xe8a598,
+  mint:     0x8db6a4,
+  cream:    0xf5e6d3,
+  skyBlue:  0xa8c8e8,
+  lavender: 0xc4b5d0,
+  paleYellow: 0xf0e5c8,
+  sand:     0xd4c5b0,
+  water:    0x5a9eaa,
+  darkTeal: 0x3b6972,
+  white:    0xfaf5f0,
+  shadow:   0x8a7a6a,
+  grass:    0xb5c8a0,
+  path:     0xdcc8b0,
+  accent:   0xe07060,
 };
 
-// Material cache: [top, bottom, sides]
-function makeBlock(topTex: THREE.Texture, sideTex: THREE.Texture, bottomTex?: THREE.Texture): THREE.MeshToonMaterial[] {
-  const gradient = createToonGradient();
-  const top = new THREE.MeshToonMaterial({ map: topTex, gradientMap: gradient });
-  const side = new THREE.MeshToonMaterial({ map: sideTex, gradientMap: gradient });
-  const bot = new THREE.MeshToonMaterial({ map: bottomTex ?? sideTex, gradientMap: gradient });
-  return [side, side, top, bot, side, side]; // +X, -X, +Y, -Y, +Z, -Z
-}
-
+/* ===== Smooth toon material (no pixel noise) ===== */
 function createToonGradient(): THREE.Texture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 4; canvas.height = 1;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 1, 1);
-  ctx.fillStyle = '#999'; ctx.fillRect(1, 0, 1, 1);
-  ctx.fillStyle = '#eee'; ctx.fillRect(2, 0, 1, 1);
-  ctx.fillStyle = '#fff'; ctx.fillRect(3, 0, 1, 1);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.NearestFilter;
-  tex.magFilter = THREE.NearestFilter;
-  return tex;
+  const c = document.createElement('canvas');
+  c.width = 4; c.height = 1;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#666'; ctx.fillRect(0,0,1,1);
+  ctx.fillStyle = '#aaa'; ctx.fillRect(1,0,1,1);
+  ctx.fillStyle = '#eee'; ctx.fillRect(2,0,1,1);
+  ctx.fillStyle = '#fff'; ctx.fillRect(3,0,1,1);
+  const t = new THREE.CanvasTexture(c);
+  t.minFilter = THREE.NearestFilter;
+  t.magFilter = THREE.NearestFilter;
+  return t;
 }
-const toonGradient = createToonGradient();
+const toonGrad = createToonGradient();
 
-/* ===== World-position seedable random ===== */
+function mat(color: number): THREE.MeshToonMaterial {
+  return new THREE.MeshToonMaterial({ color, gradientMap: toonGrad });
+}
+
+function matArr(color: number): THREE.MeshToonMaterial[] {
+  const m = mat(color);
+  return [m,m,m,m,m,m];
+}
+
+/* ===== Helpers ===== */
+function toWorld(px: number, py: number): [number, number] {
+  return [px / MAP_SCALE, -py / MAP_SCALE];
+}
+
 function seededRandom(seed: number): () => number {
   let s = seed;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-/* ===== Label sprite ===== */
 function createLabel(text: string): THREE.Sprite {
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
+  canvas.width = 256; canvas.height = 64;
   const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.roundRect(0, 0, 256, 64, 8);
-  ctx.fill();
-  ctx.font = 'bold 28px sans-serif';
-  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.fillStyle = '#5a5040';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 128, 32);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
-  const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(4, 1, 1);
-  return sprite;
+  const t = new THREE.CanvasTexture(canvas);
+  t.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false }));
+  sp.scale.set(4, 1, 1);
+  return sp;
 }
 
-/* ===== Box helper ===== */
 function addBox(
-  parent: THREE.Group,
-  x: number, y: number, z: number,
-  w: number, h: number, d: number,
-  materials: THREE.MeshToonMaterial[],
+  parent: THREE.Group, x: number, y: number, z: number,
+  w: number, h: number, d: number, materials: THREE.MeshToonMaterial[],
 ): THREE.Mesh {
   const geo = new THREE.BoxGeometry(w, h, d);
   const mesh = new THREE.Mesh(geo, materials);
-  mesh.position.set(x + w / 2, y + h / 2, z + d / 2);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  mesh.position.set(x + w/2, y + h/2, z + d/2);
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  parent.add(mesh);
+  return mesh;
+}
+
+function addCylinder(
+  parent: THREE.Group, cx: number, cy: number, cz: number,
+  r: number, h: number, color: number,
+): THREE.Mesh {
+  const geo = new THREE.CylinderGeometry(r, r, h, 12);
+  const mesh = new THREE.Mesh(geo, mat(color));
+  mesh.position.set(cx, cy + h/2, cz);
+  mesh.castShadow = true; mesh.receiveShadow = true;
   parent.add(mesh);
   return mesh;
 }
@@ -228,393 +103,366 @@ function addBox(
 export async function createScene(): Promise<THREE.Group> {
   const scene = new THREE.Group();
 
-  // ── Ground ──
-  const gg = new THREE.PlaneGeometry(GROUND_W, GROUND_H);
-  const groundMat = new THREE.MeshToonMaterial({ map: TEX.grass_top, gradientMap: toonGradient });
-  // Repeat grass texture over ground
-  const grassTiled = TEX.grass_top.clone();
-  grassTiled.wrapS = grassTiled.wrapT = THREE.RepeatWrapping;
-  grassTiled.repeat.set(GROUND_W / 2, GROUND_H / 2);
-  grassTiled.needsUpdate = true;
-  groundMat.map = grassTiled;
-
-  const ground = new THREE.Mesh(gg, groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.01;
+  // ── Ground plane ──
+  const gGeo = new THREE.PlaneGeometry(GROUND_W, GROUND_H);
+  const gMat = new THREE.MeshToonMaterial({ color: 0xc8b898, gradientMap: toonGrad });  // slightly darker sand for path contrast
+  const ground = new THREE.Mesh(gGeo, gMat);
+  ground.rotation.x = -Math.PI/2; ground.position.y = -0.01;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Grid
-  const grid = new THREE.GridHelper(Math.max(GROUND_W, GROUND_H), 72, 0x3a6a20, 0x3a6a20);
-  grid.position.y = 0.01;
+  // ── Subtle grid ──
+  const grid = new THREE.GridHelper(128, 64, 0xc8b898, 0xc8b898);
+  grid.position.y = 0.005;
+  grid.material.opacity = 0.25; grid.material.transparent = true;
   scene.add(grid);
 
-  // Zones
+  // ── Zone colors (translucent) ──
+  const zoneColors: Record<string, number> = {
+    south: 0xc8b8a8, central: 0xb8c8b0, north: 0xc0b8d0, northwest: 0xc8c0b8,
+  };
   for (const zone of Object.values(zonesData)) {
-    const zGeo = new THREE.PlaneGeometry(zone.position.width / MAP_SCALE, zone.position.height / MAP_SCALE);
+    const zGeo = new THREE.PlaneGeometry(zone.position.width/MAP_SCALE, zone.position.height/MAP_SCALE);
     const zMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0x64b464),
-      transparent: true,
-      opacity: 0.15,
-      depthWrite: false,
+      color: new THREE.Color(zoneColors[zone.id] ?? 0xc8b8a8),
+      transparent: true, opacity: 0.12, depthWrite: false,
     });
-    const zMesh = new THREE.Mesh(zGeo, zMat);
-    zMesh.rotation.x = -Math.PI / 2;
-    zMesh.position.set(
-      (zone.position.x + zone.position.width / 2) / MAP_SCALE,
-      0.02,
-      -(zone.position.y + zone.position.height / 2) / MAP_SCALE,
+    const m = new THREE.Mesh(zGeo, zMat);
+    m.rotation.x = -Math.PI/2; m.position.set(
+      (zone.position.x + zone.position.width/2)/MAP_SCALE, 0.02,
+      -(zone.position.y + zone.position.height/2)/MAP_SCALE,
     );
-    scene.add(zMesh);
+    scene.add(m);
   }
 
-  // Roads
+  // ── Roads ──
   createRoads(scene);
 
-  // Buildings
+  // ── Buildings ──
   const buildingBoxes = createBuildings(scene);
 
-  // Trees
+  // ── Water pool ──
+  createWater(scene);
+
+  // ── Grass patches ──
+  createGrassPatches(scene);
+
+  // ── Trees ──
   createTrees(scene);
 
-  // Details: flowers, bushes, rocks
-  createDetails(scene);
-
-  // Lamps + benches
+  // ── Lamps ──
   createLamps(scene);
-  createBenches(scene);
+
+  // ── Direction markers ──
+  createDirectionMarkers(scene);
 
   scene.userData.buildingBoxes = buildingBoxes;
   return scene;
 }
 
-/* ===== Roads ===== */
+/* ===== Roads — Monument Valley white stone paths ===== */
 function createRoads(scene: THREE.Group) {
-  const roadCanvas = document.createElement('canvas');
-  roadCanvas.width = 32; roadCanvas.height = 32;
-  const rctx = roadCanvas.getContext('2d')!;
-  rctx.fillStyle = '#606058';
-  rctx.fillRect(0, 0, 32, 32);
-  for (let i = 0; i < 100; i++) {
-    const g = 80 + Math.random() * 30;
-    rctx.fillStyle = `rgb(${g},${g},${g})`;
-    rctx.fillRect(Math.random() * 32, Math.random() * 32, 2, 2);
-  }
-  const roadTex = new THREE.CanvasTexture(roadCanvas);
-  roadTex.magFilter = THREE.NearestFilter;
-  roadTex.minFilter = THREE.NearestFilter;
-  roadTex.wrapS = roadTex.wrapT = THREE.RepeatWrapping;
-  roadTex.colorSpace = THREE.SRGBColorSpace;
+  const pathMat = mat(PALETTE.white);
+  const edgeMat = mat(PALETTE.shadow);
 
-  const roadMat = new THREE.MeshToonMaterial({ map: roadTex, color: 0xcccccc, gradientMap: toonGradient });
-  const roadSegs: [number, number, number, number][] = [
-    [2.5, 60, 64, -68 + 30],
-    [60, 2.5, 64, -55],
-    [30, 2.5, 64, -50],
-    [30, 2.5, 64, -30],
-    [50, 2.5, 64, -20],
-    [15, 2.5, 85, -55],
-    [15, 2.5, 35, -50],
-    [18, 2.5, 64, -30],
+  // [width, depth, centerX, centerZ]
+  // Principle: all roads strictly OUTSIDE building Box3 collision zones.
+  // East-west lateral roads placed south of each building row's south face.
+  // Approach spurs connect lateral roads to building entrances (south face).
+  const segs: [number, number, number, number][] = [
+    // ── North-south spine (x=61-65, z=-4 to -68) ──
+    // teaching at x=50-59, library at x=74-82 → clear corridor x=59-74
+    [4, 64, 63, -36],
+
+    // ── South entrance cross-axis ──
+    [14, 4, 63, -64],     // z=-64: cross through gate/bridge area
+
+    // ── Lateral roads (south of buildings, spine→east/west) ──
+    [62, 4, 61, -57],     // z=-57: south of art_center(30-36) + canteen(80-86)
+    [36, 4, 50, -52],     // z=-52: south of stadium(40-54)
+    [74, 4, 61, -37],     // z=-37: south of library(74-82) + teaching(50-59)
+    [52, 4, 37, -22],     // z=-22: south of lab(20-26)
+    [22, 4, 63, -14],     // z=-14: south of field_n(64-76)
+    [30, 4, 99, -32],     // z=-32: south of field_s(100-112)
+
+    // ── Building approach spurs (lateral → entrance) ──
+    [4, 3, 67, -62],      // → bridge south approach
+    [4, 3, 78, -37],      // → library entrance (z=-35)
+    [4, 3, 55, -32],      // → teaching entrance (z=-30)
+    [4, 3, 83, -57],      // → canteen entrance (z=-55)
+    [4, 3, 93, -58],      // → dorm entrance (z=-58)
+    [4, 3, 33, -57],      // → art_center entrance (z=-55)
+    [4, 3, 47, -52],      // → stadium entrance (z=-50)
+    [4, 3, 23, -22],      // → lab entrance (z=-20)
+    [4, 3, 70, -14],      // → field_n entrance (z=-12)
+    [4, 3, 106, -32],     // → field_s entrance (z=-30)
   ];
 
-  for (const [w, d, cx, cz] of roadSegs) {
-    const t = roadTex.clone();
-    t.needsUpdate = true;
-    t.repeat.set(w / 2, d / 2);
-    const m = roadMat.clone();
-    m.map = t;
-    const geo = new THREE.PlaneGeometry(w, d);
-    const road = new THREE.Mesh(geo, m);
-    road.rotation.x = -Math.PI / 2;
-    road.position.set(cx, 0.05, cz);
-    road.receiveShadow = true;
-    scene.add(road);
+  for (const [w, d, cx, cz] of segs) {
+    // Dark border underneath (slightly wider)
+    const edgeGeo = new THREE.PlaneGeometry(w + 0.6, d + 0.6);
+    const edge = new THREE.Mesh(edgeGeo, edgeMat);
+    edge.rotation.x = -Math.PI / 2;
+    edge.position.set(cx, 0.02, cz);
+    edge.receiveShadow = true;
+    scene.add(edge);
+
+    // White stone path on top
+    const g = new THREE.PlaneGeometry(w, d);
+    const r = new THREE.Mesh(g, pathMat);
+    r.rotation.x = -Math.PI / 2;
+    r.position.set(cx, 0.06, cz);
+    r.receiveShadow = true;
+    scene.add(r);
   }
 }
 
-/* ===== Buildings ===== */
+/* ===== Buildings — Monument Valley style ===== */
 function createBuildings(scene: THREE.Group): THREE.Box3[] {
   const boxes: THREE.Box3[] = [];
 
-  // Building style definitions
-  const styles: Record<string, {
-    wall: THREE.MeshToonMaterial[];
-    trim: THREE.MeshToonMaterial[];
-    roof: THREE.MeshToonMaterial[];
-    floors: number;
-    floorH: number;
-  }> = {
-    teaching: {
-      wall: makeBlock(TEX.concrete, TEX.concrete),
-      trim: makeBlock(TEX.stone_brick, TEX.stone_brick),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 4, floorH: 1.4,
-    },
-    library: {
-      wall: makeBlock(TEX.stone_brick, TEX.stone_brick),
-      trim: makeBlock(TEX.dark_stone, TEX.dark_stone),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 3, floorH: 1.5,
-    },
-    dorm_s: {
-      wall: makeBlock(TEX.brick, TEX.brick),
-      trim: makeBlock(TEX.wood, TEX.wood),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 3, floorH: 1.2,
-    },
-    canteen_s: {
-      wall: makeBlock(TEX.sandstone, TEX.sandstone),
-      trim: makeBlock(TEX.wood, TEX.wood),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 2, floorH: 1.6,
-    },
-    gate: {
-      wall: makeBlock(TEX.stone_brick, TEX.stone_brick),
-      trim: makeBlock(TEX.dark_stone, TEX.dark_stone),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 1, floorH: 2.0,
-    },
-    bridge: {
-      wall: makeBlock(TEX.stone_brick, TEX.stone_brick),
-      trim: makeBlock(TEX.stone, TEX.stone),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 1, floorH: 1.0,
-    },
-    stadium: {
-      wall: makeBlock(TEX.concrete, TEX.concrete),
-      trim: makeBlock(TEX.stone_brick, TEX.stone_brick),
-      roof: makeBlock(TEX.dark_stone, TEX.dark_stone),
-      floors: 2, floorH: 2.0,
-    },
-    art_center: {
-      wall: makeBlock(TEX.sandstone_smooth, TEX.sandstone_smooth),
-      trim: makeBlock(TEX.oak_wood, TEX.oak_wood),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 2, floorH: 1.6,
-    },
-    lab: {
-      wall: makeBlock(TEX.concrete, TEX.concrete),
-      trim: makeBlock(TEX.glass, TEX.glass),
-      roof: makeBlock(TEX.roof, TEX.roof),
-      floors: 3, floorH: 1.4,
-    },
+  const styles: Record<string, { color: number; floors: number; floorH: number }> = {
+    teaching:   { color: PALETTE.coral, floors: 4, floorH: 1.5 },
+    library:    { color: PALETTE.mint, floors: 3, floorH: 1.6 },
+    dorm_s:     { color: PALETTE.lavender, floors: 3, floorH: 1.3 },
+    canteen_s:  { color: PALETTE.paleYellow, floors: 2, floorH: 1.8 },
+    gate:       { color: PALETTE.cream, floors: 1, floorH: 2.5 },
+    bridge:     { color: PALETTE.sand, floors: 1, floorH: 1.2 },
+    stadium:    { color: PALETTE.skyBlue, floors: 2, floorH: 2.2 },
+    art_center: { color: PALETTE.coral, floors: 2, floorH: 1.8 },
+    lab:        { color: PALETTE.mint, floors: 3, floorH: 1.5 },
   };
 
-  // Glass material for windows
-  const glassMat = makeBlock(TEX.glass, TEX.glass);
+  const sizeMap: Record<string, [number, number]> = {
+    gate:[7,2], bridge:[12,2], library:[8,6], teaching:[9,6],
+    canteen_s:[6,5], dorm_s:[6,5], stadium:[14,10], art_center:[6,5],
+    lab:[6,5], field_n:[12,12], field_s:[12,12],
+  };
 
-  for (const b of Object.values(buildingsData)) {
+  for (const b of Object.values(buildingsData) as any[]) {
     const [wx, wz] = toWorld(b.x, b.y);
     const style = styles[b.id] ?? styles['teaching'];
-    const bw = b.id === 'gate' ? 6 : b.id === 'bridge' ? 10 : b.id.includes('field') ? 12 : 5;
-    const bd = b.id === 'gate' ? 2 : b.id === 'bridge' ? 3 : b.id.includes('field') ? 12 : 5;
-    const totalH = style.floors * style.floorH + 0.8; // + roof height
-
+    const [bw, bd] = sizeMap[b.id] ?? [6,5];
+    const totalH = style.floors * style.floorH + 1.0;
     const group = new THREE.Group();
     group.position.set(wx, 0, wz);
 
-    // Build floor by floor
-    for (let f = 0; f < style.floors; f++) {
-      const floorY = f * style.floorH;
-      // Main wall block
-      addBox(group, 0, floorY, 0, bw, style.floorH, bd, style.wall);
+    // ── Plinth (raised platform) ──
+    const plinthH = 0.3; const plinthPad = 0.4;
+    addBox(group, -plinthPad, 0, -plinthPad, bw + plinthPad*2, plinthH, bd + plinthPad*2, matArr(PALETTE.shadow));
 
-      // Window strips on even floors (every other floor)
+    // ── Floor blocks ──
+    for (let f = 0; f < style.floors; f++) {
+      const fy = plinthH + f * style.floorH;
+      const fw = f === 0 ? bw : bw - f * 0.3;
+      const fd = f === 0 ? bd : bd - f * 0.3;
+      const fx = (bw - fw) / 2;
+      const fz = (bd - fd) / 2;
+      addBox(group, fx, fy, fz, fw, style.floorH, fd, matArr(style.color));
+
+      // ── Window recesses (dark inset squares) ──
       if (f % 2 === 0 && b.id !== 'gate' && b.id !== 'bridge') {
-        const winW = 0.6; const winH = 0.8;
-        const spacing = 1.5;
-        for (let winX = spacing; winX + winW < bw; winX += spacing) {
-          addBox(group, winX, floorY + 0.3, 0, winW, winH, 0.1, glassMat);
-          addBox(group, winX, floorY + 0.3, bd - 0.1, winW, winH, 0.1, glassMat);
+        const holeW = 0.6; const holeH = 0.8;
+        const startX = fx + 1.2; const gap = 1.8;
+        for (let wx2 = startX; wx2 + holeW < fx + fw; wx2 += gap) {
+          addBox(group, wx2, fy + 0.3, fz - 0.01, holeW, holeH, 0.05, matArr(PALETTE.shadow));
+          addBox(group, wx2, fy + 0.3, fz + fd - 0.04, holeW, holeH, 0.05, matArr(PALETTE.shadow));
         }
       }
     }
 
-    // Roof (slightly overhanging)
-    const roofH = 0.6;
-    const roofOverhang = 0.5;
-    addBox(group, -roofOverhang, style.floors * style.floorH, -roofOverhang, bw + roofOverhang * 2, roofH, bd + roofOverhang * 2, style.roof);
+    // ── Columns (at corners) ──
+    if (b.id !== 'gate' && b.id !== 'bridge' && b.id.includes('field') === false) {
+      const ch = style.floors * style.floorH + plinthH;
+      const corners: [number, number][] = [[0.5,0.5],[bw-0.5,0.5],[0.5,bd-0.5],[bw-0.5,bd-0.5]];
+      for (const [cx,cz] of corners) {
+        addCylinder(group, cx, plinthH, cz, 0.2, ch, PALETTE.white);
+      }
+    }
 
-    // Label
+    // ── Arched entry (front face) ──
+    if (b.id !== 'bridge') {
+      const archW = bw * 0.4; const archH = plinthH + 1.5;
+      const archCX = bw/2; const archCZ = 0;
+      // Pillars
+      const pillarW = 0.25;
+      addBox(group, archCX - archW/2 - pillarW, plinthH, archCZ, pillarW, archH, 0.3, matArr(PALETTE.white));
+      addBox(group, archCX + archW/2, plinthH, archCZ, pillarW, archH, 0.3, matArr(PALETTE.white));
+      // Arch top (half cylinder)
+      const archR = archW/2 + pillarW;
+      const archGeo = new THREE.CylinderGeometry(archR, archR, 0.2, 16, 1, false, Math.PI, Math.PI);
+      const archMesh = new THREE.Mesh(archGeo, mat(PALETTE.white));
+      archMesh.position.set(archCX, archH + plinthH, archCZ);
+      archMesh.rotation.z = Math.PI;
+      group.add(archMesh);
+    }
+
+    // ── Stepped roof ──
+    const roofBaseY = plinthH + style.floors * style.floorH;
+    for (let r = 0; r < 3; r++) {
+      const rw = bw - r * 1.2; const rd = bd - r * 1.2;
+      const rx = (bw - rw)/2; const rz = (bd - rd)/2;
+      addBox(group, rx, roofBaseY + r*0.5, rz, rw, 0.5, rd, matArr(PALETTE.accent));
+    }
+
+    // ── Label ──
     const label = createLabel(b.name);
-    label.position.set(bw / 2, totalH + 1.0, bd / 2);
+    label.position.set(bw/2, totalH + 1.2, bd/2);
     group.add(label);
 
     scene.add(group);
-
-    // Collision box
     boxes.push(new THREE.Box3(
       new THREE.Vector3(wx, 0, wz),
-      new THREE.Vector3(wx + bw, totalH, wz + bd),
+      new THREE.Vector3(wx+bw, totalH, wz+bd),
     ));
   }
 
   return boxes;
 }
 
-/* ===== Trees (Minecraft style: trunk + foliage cube) ===== */
+/* ===== Water pool ===== */
+function createWater(scene: THREE.Group) {
+  const pool = new THREE.Group();
+  pool.position.set(64, 0, -45);
+  // Basin
+  addBox(pool, -4, -0.4, -4, 8, 0.4, 8, matArr(PALETTE.shadow));
+  // Water surface
+  const wGeo = new THREE.PlaneGeometry(7, 7);
+  const wMat = new THREE.MeshToonMaterial({
+    color: PALETTE.water, transparent: true, opacity: 0.85, gradientMap: toonGrad,
+  });
+  const water = new THREE.Mesh(wGeo, wMat);
+  water.rotation.x = -Math.PI/2; water.position.set(0, 0.05, 0);
+  pool.add(water);
+  // Center fountain column
+  addCylinder(pool, 0, 0.05, 0, 0.3, 1.5, PALETTE.white);
+  addBox(pool, -0.4, 1.5, -0.4, 0.8, 0.15, 0.8, matArr(PALETTE.accent));
+  scene.add(pool);
+}
+
+/* ===== Grass patches — muted geometric lawns ===== */
+function createGrassPatches(scene: THREE.Group) {
+  const greens = [0xb5c8a0, 0xa8c098, 0xc0d0a8, 0x9db89a, 0xc8d8b4, 0xb0c898];
+  const rng = seededRandom(77);
+
+  const patches: [number, number, number, number][] = [
+    // ── South entrance ──
+    [5, 4, 56, -66], [4, 3, 60, -64],
+    // ── East of spine ──
+    [6, 8, 60, -50], [5, 4, 62, -42], [5, 4, 70, -42], [4, 3, 68, -38],
+    // ── West of spine ──
+    [8, 6, 32, -44], [5, 4, 46, -38],
+    [10, 8, 28, -36], [8, 5, 36, -32],
+    [6, 4, 40, -28],
+    [5, 4, 34, -38],
+    [7, 4, 30, -42],
+    [6, 4, 34, -18],
+    [5, 4, 24, -26],
+    // ── Far west ──
+    [8, 6, 8, -36], [6, 5, 12, -48], [7, 5, 6, -28],
+    [5, 3, 10, -20], [6, 4, 14, -14],
+    // ── Far east ──
+    [8, 6, 96, -46], [6, 5, 98, -36], [5, 4, 100, -52],
+    [5, 4, 104, -40], [5, 4, 78, -48],
+    [4, 3, 108, -48], [4, 3, 94, -28],
+    // ── field_s area ──
+    [7, 5, 114, -26], [8, 4, 96, -24],
+    // ── Library east ──
+    [6, 5, 84, -38], [5, 3, 88, -32], [8, 5, 88, -30],
+    // ── North / field_n area ──
+    [8, 6, 50, -8], [6, 4, 56, -12],
+    [10, 5, 40, -4], [8, 4, 52, -2],
+    // ── Water area ──
+    [4, 3, 56, -44],
+  ];
+
+  for (const [w, d, cx, cz] of patches) {
+    const shade = greens[Math.floor(rng() * greens.length)];
+    const geo = new THREE.PlaneGeometry(w, d);
+    const grassMat = new THREE.MeshToonMaterial({
+      color: shade, gradientMap: toonGrad, transparent: true, opacity: 0.7,
+    });
+    const grass = new THREE.Mesh(geo, grassMat);
+    grass.rotation.x = -Math.PI / 2;
+    grass.position.set(cx, 0.015, cz);
+    grass.receiveShadow = true;
+    scene.add(grass);
+  }
+}
+
+/* ===== Trees — geometric spheres on cylinders ===== */
 function createTrees(scene: THREE.Group) {
   const rng = seededRandom(42);
-  const trunkMat = makeBlock(TEX.oak_wood, TEX.wood);
-  const leafMats = [
-    makeBlock(TEX.leaves, TEX.leaves),
-    makeBlock(TEX.leaves_dark, TEX.leaves_dark),
-  ];
+  const treeColors = [PALETTE.mint, PALETTE.coral, PALETTE.lavender, PALETTE.skyBlue, PALETTE.paleYellow];
+  const trunkColor = PALETTE.shadow;
 
-  const treeDefs: [number, number, number, number][] = [];
-  for (let i = 0; i < 40; i++) {
-    const x = rng() * GROUND_W;
-    const z = -(rng() * GROUND_H);
-    const nearRoad = Math.abs(x - 64) < 3;
-    const nearEW = Math.abs(z + 40) < 3 || Math.abs(z + 25) < 3;
-    if (nearRoad || nearEW) continue;
-    const h = 2 + rng() * 3; // trunk height
-    const lw = 1.5 + rng() * 2; // leaf width
-    treeDefs.push([x, z, h, lw]);
-  }
-
-  for (const [x, z, h, lw] of treeDefs) {
-    const group = new THREE.Group();
-    group.position.set(x, 0, z);
-
-    // Trunk
-    const trunkW = 0.4;
-    addBox(group, -trunkW / 2, 0, -trunkW / 2, trunkW, h, trunkW, trunkMat);
-
-    // Leaves (2-3 layers)
-    const leafMat = leafMats[Math.floor(rng() * leafMats.length)];
-    const layers = h > 3.5 ? 3 : 2;
-    for (let l = 0; l < layers; l++) {
-      const lh = lw * (1 - l * 0.2);
-      const off = lw * (l * 0.15);
-      addBox(group, -(lh) / 2, h + l * 0.8, -(lh) / 2, lh, 0.8, lh, leafMat);
-      addBox(group, -(lh) / 2 + off, h + l * 0.8 + 0.8, -(lh) / 2 + off, lh, 0.8, lh, leafMat);
-    }
-
-    scene.add(group);
-  }
-}
-
-/* ===== Details: flowers, bushes, rocks ===== */
-function createDetails(scene: THREE.Group) {
-  const flowerMat = makeBlock(TEX.leaves, TEX.leaves);
-  const bushMat = makeBlock(TEX.leaves_dark, TEX.leaves_dark);
-  const rockMat = makeBlock(TEX.stone, TEX.stone);
-  
-  // Flower colors
-  const flowerColors = [0xff6666, 0xffcc66, 0xff9966, 0xffffff, 0xff88cc, 0xffff88];
-  const flowerMats = flowerColors.map(c => {
-    const m = new THREE.MeshToonMaterial({ color: c, gradientMap: toonGradient });
-    return [m, m, m, m, m, m];
-  });
-
-  const rng = seededRandom(999);
-
-  // Scatter flowers near buildings and along paths
-  const flowerSpots: [number, number][] = [];
-  for (let i = 0; i < 80; i++) {
-    const x = 2 + rng() * 124;
-    const z = -(2 + rng() * 68);
-    const nearRoad = Math.abs(x - 64) < 4 || Math.abs(z + 40) < 4 || Math.abs(z + 25) < 4;
+  const spots: [number, number, number, number][] = [];
+  for (let i = 0; i < 35; i++) {
+    const x = 3 + rng() * 122; const z = -(3 + rng() * 66);
+    const nearRoad = Math.abs(x-63) < 4 || Math.abs(z+40) < 4 || Math.abs(z+25) < 4;
     if (nearRoad) continue;
-    flowerSpots.push([x, z]);
+    const h = 1.5 + rng() * 2.5;
+    const cr = 0.6 + rng() * 1.0;
+    spots.push([x, z, h, cr]);
   }
 
-  for (const [x, z] of flowerSpots) {
-    // Tiny flower cluster
-    const cluster = new THREE.Group();
-    cluster.position.set(x, 0.02, z);
-    for (let f = 0; f < 3 + Math.floor(rng() * 4); f++) {
-      const fx = (rng() - 0.5) * 1.2;
-      const fz = (rng() - 0.5) * 1.2;
-      const mat = flowerMats[Math.floor(rng() * flowerMats.length)];
-      addBox(cluster, fx, 0, fz, 0.12, 0.25 + rng() * 0.1, 0.12, mat);
-    }
-    // Green base (leaves)
-    addBox(cluster, -0.15, 0, -0.15, 0.3, 0.08, 0.3, flowerMat);
-    scene.add(cluster);
-  }
-
-  // Bushes near buildings
-  const bushSpots: [number, number][] = [
-    [60, -22], [60, -30], [68, -24], [68, -28],
-    [80, -52], [84, -56], [86, -52],
-    [40, -46], [44, -50], [38, -52],
-    [26, -54], [32, -56], [28, -18],
-    [50, -18], [54, -16],
-  ];
-  for (const [x, z] of bushSpots) {
-    const bush = new THREE.Group();
-    bush.position.set(x, 0, z);
-    const bl = 0.4;
-    addBox(bush, -bl, 0, -bl, bl * 2, 0.6, bl * 2, bushMat);
-    addBox(bush, -bl * 0.6, 0.6, -bl * 0.6, bl * 1.2, 0.5, bl * 1.2, bushMat);
-    scene.add(bush);
-  }
-
-  // Decorative rocks along paths
-  for (let i = 0; i < 25; i++) {
-    const x = 60 + (rng() - 0.5) * 20;
-    const z = -(10 + rng() * 55);
-    const sx = 0.3 + rng() * 0.5;
-    const sy = 0.2 + rng() * 0.3;
-    const sz = 0.3 + rng() * 0.5;
-    addBox(scene, x, 0, z, sx, sy, sz, rockMat);
-  }
-}
-
-/* ===== Lamps (post + glow cube) ===== */
-function createLamps(scene: THREE.Group) {
-  const postMat = makeBlock(TEX.dark_stone, TEX.dark_stone);
-  const glowMat = new THREE.MeshToonMaterial({
-    color: 0xfff8c0,
-    emissive: 0xfff8c0,
-    emissiveIntensity: 0.5,
-    gradientMap: toonGradient,
-  });
-
-  for (let z = -65; z <= -10; z += 8) {
-    for (const side of [-2.5, 2.5]) {
-      const group = new THREE.Group();
-      group.position.set(64 + side, 0, z);
-      addBox(group, -0.15, 0, -0.15, 0.3, 2.5, 0.3, postMat);
-      // Glow cube on top
-      addBox(group, -0.25, 2.5, -0.25, 0.5, 0.5, 0.5, [glowMat, glowMat, glowMat, glowMat, glowMat, glowMat]);
-      scene.add(group);
-    }
-  }
-}
-
-/* ===== Benches (simple plank + legs) ===== */
-function createBenches(scene: THREE.Group) {
-  const plankMat = makeBlock(TEX.wood, TEX.wood);
-  const legMat = makeBlock(TEX.oak_wood, TEX.oak_wood);
-
-  const placements: [number, number, number][] = [
-    [64, -24, 0], [64, -26, Math.PI],
-    [58, -28, Math.PI / 2], [58, -32, -Math.PI / 2],
-    [82, -54, 0], [82, -56, Math.PI],
-    [92, -56, 0],
-    [42, -48, 0], [42, -52, Math.PI],
-    [30, -56, Math.PI / 2],
-    [22, -18, 0],
-  ];
-
-  for (const [x, z, rot] of placements) {
+  for (const [x,z,h,cr] of spots) {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
-    group.rotation.y = rot;
-    addBox(group, -0.8, 0.3, -0.2, 1.6, 0.15, 0.4, plankMat);
-    addBox(group, -0.7, 0.0, -0.15, 0.15, 0.3, 0.15, legMat);
-    addBox(group, 0.55, 0.0, -0.15, 0.15, 0.3, 0.15, legMat);
-    addBox(group, -0.7, 0.0, 0.15, 0.15, 0.3, 0.15, legMat);
-    addBox(group, 0.55, 0.0, 0.15, 0.15, 0.3, 0.15, legMat);
+    addCylinder(group, 0, 0, 0, 0.12, h, trunkColor);
+    const leafColor = treeColors[Math.floor(rng() * treeColors.length)];
+    // Main sphere
+    const sGeo = new THREE.SphereGeometry(cr, 12, 8);
+    const sMesh = new THREE.Mesh(sGeo, mat(leafColor));
+    sMesh.position.y = h + cr*0.6; sMesh.castShadow = true;
+    group.add(sMesh);
+    // Smaller offset sphere for asymmetrical silhouette
+    const s2Geo = new THREE.SphereGeometry(cr*0.7, 10, 6);
+    const s2 = new THREE.Mesh(s2Geo, mat(leafColor));
+    s2.position.set(cr*0.5, h + cr*0.2, cr*0.3);
+    group.add(s2);
     scene.add(group);
   }
 }
 
-/* ===== Helpers ===== */
-function toWorld(px: number, py: number): [number, number] {
-  return [px / MAP_SCALE, -py / MAP_SCALE];
+/* ===== Lamps — minimal columns ===== */
+function createLamps(scene: THREE.Group) {
+  for (let z = -64; z <= -12; z += 9) {
+    for (const side of [-3, 3]) {
+      const g = new THREE.Group();
+      g.position.set(63+side, 0, z);
+      addCylinder(g, 0, 0, 0, 0.12, 2.8, PALETTE.white);
+      const glowGeo = new THREE.SphereGeometry(0.25, 8, 6);
+      const glowMat = new THREE.MeshToonMaterial({
+        color: PALETTE.accent, emissive: PALETTE.accent,
+        emissiveIntensity: 0.3, gradientMap: toonGrad,
+      });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.position.y = 2.8; g.add(glow);
+      scene.add(g);
+    }
+  }
+}
+
+/* ===== Direction markers ===== */
+function createDirectionMarkers(scene: THREE.Group) {
+  const dirs: [string, number, number, number][] = [
+    ['北', 64, 0.1, -1.5], ['南', 64, 0.1, -70.5],
+    ['东', 126.5, 0.1, -36], ['西', 1.5, 0.1, -36],
+  ];
+  for (const [text, x, y, z] of dirs) {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d')!;
+    ctx.font = 'bold 80px sans-serif';
+    ctx.fillStyle = PALETTE.accent.toString(16).padStart(6,'0');
+    ctx.fillStyle = '#d08070';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 64);
+    const t = new THREE.CanvasTexture(c);
+    t.minFilter = THREE.LinearFilter;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false }));
+    sp.position.set(x, y, z); sp.scale.set(6,6,1);
+    scene.add(sp);
+  }
 }

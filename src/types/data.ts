@@ -41,5 +41,30 @@ export interface GameConfig {
     startHP: number;
     startMP: number;
     speed: number;
+    startLingShi: number;   // 初始灵石
   };
+  economy: {
+    dailyLingShi: number;   // 每日俸禄
+    comboBonus: number;     // 贯通灵石倍数
+  };
+  skills: {
+    id: string;
+    name: string;
+    icon: string;
+    mpCost: number;
+    cooldown: number;
+    effect: 'bonusDamage' | 'heal' | 'doubleScore';
+    value: number;
+    description: string;
+  }[];
+  techniques?: {             // 新增才艺配置（Phase 2 接入）
+    id: string;
+    name: string;
+    type: 'active' | 'passive';
+    cost: number;
+    cooldown: number;
+    rankReq: number;
+    effect: string;
+    value: number;
+  }[];
 }

@@ -1,9 +1,9 @@
 import type { PlayerState, GameState, CombatState, Rank } from '../types';
 import type { GameConfig } from '../types';
+import type { Equipped } from '../types/equipment';
 
 /**
  * Tiny EventEmitter for pub/sub change notifications.
- * Replaces Phaser.Data.DataManager.events.
  */
 class EventEmitter {
   private listeners: Map<string, Array<(...args: unknown[]) => void>> = new Map();
@@ -31,16 +31,11 @@ class EventEmitter {
 
 /**
  * StateManager — framework-agnostic game state store.
- * Replaces Phaser.Data.DataManager with Map + EventEmitter.
- * Keeps ALL existing method signatures and behavior from the 2D version.
  */
 export class StateManager {
   private store = new Map<string, unknown>();
   events = new EventEmitter();
 
-  /**
-   * Initialize state from GameConfig defaults.
-   */
   init(config: GameConfig): void {
     this.store.set('player', this.defaultPlayerState(config));
     this.store.set('game', this.defaultGameState());
@@ -92,13 +87,18 @@ export class StateManager {
   private defaultPlayerState(config: GameConfig): PlayerState {
     return {
       id: 'player_001',
-      name: '新生',
-      rank: '新生' as Rank,
+      name: '启鳞',
+      rank: '启鳞' as Rank,
       kp: 0,
-      hp: config.player.startHP,
-      mp: config.player.startMP,
+      lingShi: config.player.startLingShi ?? 10,
+      xinLi: config.player.startHP,
+      caiQi: config.player.startMP,
       stats: { history: 0, biology: 0, geography: 0, chemistry: 0 },
+      equipped: { weapon: null, armor: null, accessory: null },
+      unlockedLaws: [],
+      lawPages: [],
       inventory: [],
+      elixirs: [],
     };
   }
 
@@ -121,8 +121,8 @@ export class StateManager {
       timer: 20,
       comboCount: 0,
       weaknessApplied: false,
-      playerHP: 100,
-      playerMP: 50,
+      xinLi: 100,
+      caiQi: 50,
     };
   }
 }

@@ -122,8 +122,8 @@ export class WorldManager {
     this.interactionPrompt = '';
 
     for (const building of this.buildings) {
-      const w = (building as any).width ?? 80;
-      const h = (building as any).height ?? 60;
+      const w = building.width ?? 80;
+      const h = building.height ?? 60;
       const cx = building.x + w / 2;
       const cy = building.y + h / 2;
       const dx = px - cx;
@@ -133,7 +133,6 @@ export class WorldManager {
       if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) {
         this.nearBuilding = building;
         this.interactionPrompt = `按 E 进入 ${building.name}`;
-        console.log(`[PROXIMITY] near ${building.name} dx=${dx} dy=${dy}`);
         return;
       }
     }
@@ -217,7 +216,7 @@ export class WorldManager {
     } else {
       const playerState = this.stateManager.getPlayerState();
       this.stateManager.updatePlayer({
-        hp: Math.max(1, playerState.hp - 20),
+        xinLi: Math.max(1, playerState.xinLi - 20),
       });
     }
   }

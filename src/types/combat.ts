@@ -1,6 +1,15 @@
 /**
  * 战斗相关类型
  */
+
+/** BOSS 战斗结果（动作战斗） */
+export interface ActionCombatResult {
+  victory: boolean;
+  bossName: string;
+  playerRemainingHP: number;
+  phasesCompleted: number;
+}
+
 export interface Demon {
   id: string;
   name: string;
@@ -16,7 +25,7 @@ export interface Demon {
 
 export interface Question {
   id: string;
-  subject: '历史' | '生物' | '地理' | '化学';
+  subject: '物理' | '历史' | '生物' | '地理' | '化学';
   difficulty: number;  // 1-5
   text: string;
   options: string[];  // 4 选项
@@ -24,6 +33,10 @@ export interface Question {
   explanation: string;
   knowledgePoint: string;
   source: string;  // textbook/reference
+  /** Chapter reference for cultivation tracking (e.g. "必修一 §1.1") */
+  chapter?: string;
+  /** Associated law ID for cultivation → law progression */
+  law?: string;
 }
 
 export interface CombatResult {
@@ -31,4 +44,15 @@ export interface CombatResult {
   damage: number;
   comboBroken: boolean;
   weaknessTriggered: boolean;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  icon: string;
+  mpCost: number;
+  cooldown: number;
+  effect: 'bonusDamage' | 'heal' | 'doubleScore';
+  value: number;
+  description: string;
 }
