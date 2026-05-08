@@ -76,14 +76,21 @@ export class HUD {
 #hud > * {
   pointer-events: none;
 }
-/* Top-left: player stats */
+/* Top-left: player stats — Monument Valley 3D panel */
 .hud-top-left {
   position: absolute;
-  top: 12px;
+  top: 16px;
   left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(20,14,8,0.85), rgba(30,22,14,0.75));
+  border: 1px solid rgba(200,168,78,0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(200,168,78,0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .hud-rank-kp {
   display: flex;
@@ -91,49 +98,62 @@ export class HUD {
   gap: 12px;
 }
 .hud-rank {
-  font-size: 14px;
+  font-size: 15px;
   color: #c8a84e;
   font-weight: bold;
+  text-shadow: 0 0 8px rgba(200,168,78,0.5);
 }
 .hud-kp {
   font-size: 13px;
   color: #fbbf24;
+  text-shadow: 0 0 6px rgba(251,191,36,0.3);
 }
 .hud-bars {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .hud-bar-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .hud-bar-label {
-  font-size: 10px;
-  color: #9ca3af;
-  width: 20px;
+  font-size: 11px;
+  color: #c8a84e;
+  width: 24px;
   text-align: right;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(200,168,78,0.4);
 }
 .hud-bar-outer {
-  width: 120px;
-  height: 8px;
-  background: rgba(0,0,0,0.5);
-  border-radius: 4px;
+  width: 140px;
+  height: 10px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 5px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(200,168,78,0.25);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
 }
 .hud-bar-inner {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 4px;
   transition: width 0.3s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
 }
-.hud-bar-inner.hp { background: linear-gradient(90deg, #dc2626, #ef4444); }
-.hud-bar-inner.mp { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+.hud-bar-inner.hp { 
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+  box-shadow: 0 0 6px rgba(239,68,68,0.4);
+}
+.hud-bar-inner.mp { 
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  box-shadow: 0 0 6px rgba(59,130,246,0.4);
+}
 .hud-bar-text {
   font-size: 10px;
-  color: #d1d5db;
-  min-width: 60px;
+  color: #e5e7eb;
+  min-width: 64px;
+  text-shadow: 0 0 4px rgba(255,255,255,0.2);
 }
 /* Top-center: zone name */
 .hud-zone {

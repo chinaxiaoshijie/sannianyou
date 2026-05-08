@@ -99,19 +99,13 @@ export class TutorialManager {
   /** Mark the current step as complete and advance. */
   advance(): void {
     this.currentStepIndex++;
-    this.saveProgress();
-
-    // Auto-complete tutorial after first interaction (rest are self-explanatory hints)
-    if (this.currentStepIndex >= 2) {
-      this.complete();
-      return;
-    }
 
     if (this.currentStepIndex >= this.steps.length) {
       this.complete();
       return;
     }
 
+    this.saveProgress();
     this.showCurrentStep();
   }
 

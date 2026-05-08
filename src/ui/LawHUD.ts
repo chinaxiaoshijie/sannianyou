@@ -42,9 +42,8 @@ export class LawHUD {
 
     this.canvas.style.cssText += `
       position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 24px;
+      right: 24px;
       z-index: 101;
       pointer-events: none;
     `;
