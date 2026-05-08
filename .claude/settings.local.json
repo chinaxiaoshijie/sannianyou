@@ -4,7 +4,7 @@
     "apiKey": "ds-proxy-local"
   },
   "model": "claude-sonnet-4-6",
-  "alwaysThinkingEnabled": true,
+  "alwaysThinkingEnabled": false,
   "permissions": {
     "allow": [
       "Bash(git status*)",
