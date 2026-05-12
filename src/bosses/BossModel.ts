@@ -15,6 +15,12 @@ export class BossModel {
   private flashTimer = 0;
   private phaseTransition = false;
   private phaseTransitionTimer = 0;
+  private hpBarSprite: THREE.Sprite;
+  private hpBarCanvas: HTMLCanvasElement;
+  private wireframeTimer = 0;
+  private wireframeActive = false;
+  private pushBackVel = new THREE.Vector3();
+  private pushBackTimer = 0;
 
   constructor(data: BossData, position = new THREE.Vector3(0, 0, 0)) {
     this.group = new THREE.Group();
@@ -103,6 +109,20 @@ export class BossModel {
     const nameSprite = this.createNameSprite(data.name);
     nameSprite.position.set(0, 4.5, 0);
     this.group.add(nameSprite);
+
+    // HP bar sprite (below name)
+    this.hpBarCanvas = document.createElement('canvas');
+    this.hpBarCanvas.width = 256;
+    this.hpBarCanvas.height = 24;
+    const hpTexture = new THREE.CanvasTexture(this.hpBarCanvas);
+    hpTexture.minFilter = THREE.LinearFilter;
+    this.hpBarSprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: hpTexture, transparent: true, depthTest: false })
+    );
+    this.hpBarSprite.position.set(0, 3.8, 0);
+    this.hpBarSprite.scale.set(5, 0.5, 1);
+    this.group.add(this.hpBarSprite);
+    this.drawHpBar(1); // full HP initially
   }
 
   private createNameSprite(text: string): THREE.Sprite {
@@ -135,6 +155,31 @@ export class BossModel {
     }
   }
 
+  /** L0 质点聚焦: toggle core wireframe mode for duration. */
+  setCoreWireframe(enabled: boolean, duration: number): void {
+    const coreMat = this.core.material as THREE.MeshBasicMaterial;
+    if (enabled) {
+      this.wireframeActive = true;
+      this.wireframeTimer = duration;
+      coreMat.wireframe = true;
+      coreMat.opacity = 0.6;
+    } else {
+      this.wireframeActive = false;
+      this.wireframeTimer = 0;
+      coreMat.wireframe = false;
+      coreMat.opacity = 0.85;
+    }
+  }
+
+  /** L2 弹力反震: push BOSS back from a direction. */
+  pushBack(from: THREE.Vector3, distance: number): void {
+    const dir = new THREE.Vector3()
+      .subVectors(this.group.position, from)
+      .setY(0)
+      .normalize();
+    this.pushBackVel.copy(dir).multiplyScalar(distance);
+    this.pushBackTimer = 0.5;
+  }
   /** Trigger phase transition animation. */
   triggerPhaseTransition(): void {
     this.phaseTransition = true;
@@ -178,12 +223,29 @@ export class BossModel {
     if (this.phaseTransition) {
       this.phaseTransitionTimer -= dt;
       const t = this.phaseTransitionTimer;
-      // Book "cracks open" — scale pulses
       const crack = 1 + Math.sin(t * 20) * 0.1 * t;
       this.body.scale.setScalar(crack);
       if (t <= 0) {
         this.phaseTransition = false;
         this.body.scale.setScalar(1);
+      }
+    }
+
+    // Wireframe timer (L0)
+    if (this.wireframeActive) {
+      this.wireframeTimer -= dt;
+      if (this.wireframeTimer <= 0) {
+        this.setCoreWireframe(false, 0);
+      }
+    }
+
+    // Push back (L2)
+    if (this.pushBackTimer > 0) {
+      this.pushBackTimer -= dt;
+      const step = this.pushBackVel.clone().multiplyScalar(dt / 0.5);
+      this.group.position.add(step);
+      if (this.pushBackTimer <= 0) {
+        this.pushBackVel.set(0, 0, 0);
       }
     }
   }
@@ -210,6 +272,46 @@ export class BossModel {
     const b = 0.27 * ratio;
     (this.core.material as THREE.MeshBasicMaterial).color.setRGB(r, g, b);
     this.coreLight.color.setRGB(r, g, b);
+    // Update 3D HP bar
+    this.drawHpBar(ratio);
+  }
+
+  private drawHpBar(ratio: number): void {
+    const canvas = this.hpBarCanvas;
+    const ctx = canvas.getContext('2d')!;
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, w, h);
+
+    // HP fill
+    const fillW = Math.max(0, Math.floor((w - 4) * ratio));
+    if (fillW > 0) {
+      const gradient = ctx.createLinearGradient(2, 0, fillW, 0);
+      if (ratio > 0.5) {
+        gradient.addColorStop(0, '#4ade80');
+        gradient.addColorStop(1, '#22c55e');
+      } else if (ratio > 0.25) {
+        gradient.addColorStop(0, '#fbbf24');
+        gradient.addColorStop(1, '#f59e0b');
+      } else {
+        gradient.addColorStop(0, '#ef4444');
+        gradient.addColorStop(1, '#dc2626');
+      }
+      ctx.fillStyle = gradient;
+      ctx.fillRect(2, 2, fillW, h - 4);
+    }
+
+    // Border
+    ctx.strokeStyle = 'rgba(200,168,78,0.6)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(1, 1, w - 2, h - 2);
+
+    // Update texture
+    (this.hpBarSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
   }
 
   /** Destroy resources. */

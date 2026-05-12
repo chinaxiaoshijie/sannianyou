@@ -13,18 +13,21 @@ import { LawManager } from './core/LawManager';
 import { WorldManager } from './systems/world/WorldManager';
 import { TutorialManager } from './systems/TutorialManager';
 import { EquipmentManager } from './systems/EquipmentManager';
-import { CombatManager } from './systems/combat/CombatManager';
+
 import { CombatEngine } from './systems/combat/CombatEngine';
 import { CombatArena } from './systems/combat/CombatArena';
 import { LawEffects } from './systems/combat/LawEffects';
+import { DamageNumbers } from './systems/combat/DamageNumbers';
+import { SoundManager } from './systems/combat/SoundManager';
 import { CombatHUD } from './ui/CombatHUD';
-import { CombatUI } from './ui/CombatUI';
+
 import { HUD } from './ui/HUD';
 import { LawHUD } from './ui/LawHUD';
 import { LawPanel } from './ui/LawPanel';
 import { CultivationUI } from './ui/CultivationUI';
 import { MapPanel } from './ui/MapPanel';
 import { CodexPanel } from './ui/CodexPanel';
+import { HelpButton } from './ui/HelpButton';
 import type { Question, Building, Zone } from './types';
 import type { GameConfig, BossData } from './types';
 import gameConfigData from './data/game-config.json';
@@ -85,8 +88,7 @@ const worldManager = new WorldManager(
   demonsData as unknown as Record<string, any>,
 );
 
-const combatManager = new CombatManager(stateManager);
-const combatUI = new CombatUI(combatManager);
+
 const hud = new HUD(stateManager);
 
 /* ===== LAW SYSTEM ===== */
@@ -95,6 +97,8 @@ const lawHUD = new LawHUD(lawManager);
 
 /* ===== TUTORIAL SYSTEM ===== */
 const tutorialManager = new TutorialManager(stateManager, lawManager);
+const helpButton = new HelpButton();
+helpButton.init();
 
 /* ===== LAW PANEL (with equipment tab) ===== */
 const lawPanel = new LawPanel(lawManager, equipmentManager);
@@ -125,9 +129,11 @@ const cultivationUI = new CultivationUI(
   equipmentManager,
 );
 
-// Unlock all laws for testing (remove in production)
-lawManager.checkUnlock(100);
-lawManager.autoEquip();
+// Dev mode only — gate behind URL param ?dev
+if (new URLSearchParams(window.location.search).has('dev')) {
+  lawManager.checkUnlock(100);
+  lawManager.autoEquip();
+}
 
 /* ===== CODEX PANEL (J key) ===== */
 let codexPanel: CodexPanel | null = null;
@@ -201,24 +207,7 @@ window.addEventListener('resize', () => {
   composer.setSize(window.innerWidth, window.innerHeight);
 });
 
-/* ===== COMBAT FLOW — Legacy (quiz-based) ===== */
-let inLegacyCombat = false;
-
-function onLegacyEncounter(demon: any, demonId: string) {
-  if (inCombat) return; // already in real-time combat
-  inLegacyCombat = true;
-  combatManager.startCombat(demon, demonId, (result) => {
-    worldManager.onCombatComplete(result, demonId);
-    combatUI.showResult(result, demon.name ?? demonId, null, () => {
-      combatUI.hide();
-      inLegacyCombat = false;
-    });
-  });
-  combatUI.show();
-}
-
-// ── Random encounters disabled — only Bridge BOSS triggers real-time combat
-// worldManager.onEncounter = onLegacyEncounter;
+/* ===== WORLD INTERACTION ===== */
 worldManager.onInteraction = (building, action) => {
   if (action === 'save') {
     console.log('游戏已保存!');
@@ -230,6 +219,7 @@ worldManager.onInteraction = (building, action) => {
 };
 
 /* ===== REAL-TIME COMBAT ENGINE (Phase 3a/3b) ===== */
+const sound = new SoundManager();
 let inCombat = false;
 let combatEngine: CombatEngine | null = null;
 let combatArena: CombatArena | null = null;
@@ -312,8 +302,9 @@ function startRealtimeCombat(): void {
   combatArena = new CombatArena();
   combatArena.show(scene, arenaCenter);
 
-  // Move player to arena center
-  player.mesh.position.copy(arenaCenter);
+  // Move player to arena center (slightly offset from BOSS)
+  const playerOffset = new THREE.Vector3(3, 0, 3); // offset so player is visible, not inside BOSS
+  player.mesh.position.copy(arenaCenter).add(playerOffset);
   player.mesh.userData.combatReturnPos = returnPos;
 
   // Debug: confirm BOSS added to scene
@@ -333,6 +324,10 @@ function startRealtimeCombat(): void {
 /** End real-time BOSS combat. */
 function endRealtimeCombat(victory: boolean): void {
   if (!combatEngine) return;
+
+  // Play sound
+  if (victory) sound.playVictory();
+  else sound.playDefeat();
 
   // Get settlement data before ending
   const settlement = combatEngine.getSettlement(victory);
@@ -515,8 +510,17 @@ function animate() {
 
   const dt = Math.min(clock.getDelta(), 0.1);
 
-  if (!inCombat && !inLegacyCombat && !cultivationUI.isOpen) {
+  if (!inCombat && !cultivationUI.isOpen) {
     player.update(dt, input, buildingBoxes);
+
+    // Natural HP/MP regen (§6.4: +0.5 HP/s, +0.3 MP/s)
+    const ps = stateManager.getPlayerState();
+    if (ps.xinLi < 100 || ps.caiQi < 50) {
+      stateManager.updatePlayer({
+        xinLi: Math.min(100, ps.xinLi + 0.5 * dt),
+        caiQi: Math.min(50, ps.caiQi + 0.3 * dt),
+      });
+    }
 
     worldManager.update(player.mesh.position.x, player.mesh.position.z, dt);
 
@@ -527,7 +531,7 @@ function animate() {
       if (!interactHeld) {
         const didInteract = worldManager.tryInteract();
         if (didInteract) {
-          tutorialManager.notifyInteraction();
+        tutorialManager.notifyInteraction();
         }
       }
       interactHeld = true;
@@ -542,7 +546,7 @@ function animate() {
     // Update map player position
     mapPanel.updatePlayerPosition(player.mesh.position.x, player.mesh.position.z);
 
-    // Tutorial system update
+    // Tutorial system
     if (!tutorialManager.isComplete) {
       tutorialManager.update(player.mesh.position);
     }
@@ -576,24 +580,63 @@ function animate() {
     if (inCombat && combatEngine) {
       const combatState = combatEngine.update(dt, player.mesh.position, combatInput);
 
+      // Update critical window & player speed tracking (L3)
+      combatEngine.updateCriticalWindow(dt, player.mesh.position);
+
       // Update law cooldowns during combat
       lawManager.updateCooldowns(dt);
       lawHUD.update(dt);
 
-      // Update law visual effects
+      // Update law visual effects + mechanism dispatch
       if (lawEffects) {
         lawEffects.update(dt);
         if (combatState.lawJustActivated) {
+          const law = combatState.lawJustActivated;
           const bossPos = combatEngine.getBossGroup()?.position ?? new THREE.Vector3(BOSS_TRIGGER.x, 0, BOSS_TRIGGER.z);
-          lawEffects.play(combatState.lawJustActivated, bossPos, player.mesh.position);
-          combatHUD?.showCombatMessage(`${combatState.lawJustActivated.name}!`, 'hit');
-          camera.shake(0.6, 0.2); // boss hit shake
+          lawEffects.play(law, bossPos, player.mesh.position);
+
+          switch (law.effectType) {
+            case 'visualInfo':
+              camera.zoomToTarget(bossPos, Number(law.effectParams.zoomDistance) || 5, Number(law.effectParams.highlightDuration) || 5);
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              break;
+            case 'prediction':
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              break;
+            case 'aoe':
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              camera.shake(0.25, 0.15);
+              sound.playLaw();
+              break;
+            case 'counter':
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              camera.shake(0.3, 0.2);
+              sound.playLaw();
+              break;
+            case 'zone':
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              break;
+            case 'critical':
+              combatHUD?.showCombatMessage(`${law.name}! F=ma`, 'hit');
+              break;
+            case 'buff': {
+              const sb = combatEngine.consumeSpeedBuff();
+              if (sb) player.setSpeedMultiplier(sb.multiplier, sb.duration);
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              break;
+            }
+            default:
+              combatHUD?.showCombatMessage(`${law.name}!`, 'hit');
+              break;
+          }
         }
       }
 
-      // Player damage shake
+      // Player hit flash + invincibility
       if (combatState.playerHP < prevCombatHP) {
-        camera.shake(0.8, 0.3); // player hurt shake
+        player.flashHit();
+        camera.shake(0.35, 0.2); // player hurt shake (subtle)
+        sound.playHit();
       }
       prevCombatHP = combatState.playerHP;
 
@@ -613,6 +656,7 @@ function animate() {
       if (combatState.phaseTransitionJustHappened) {
         const phaseNum = combatState.bossPhaseIndex + 1;
         combatHUD.showCombatMessage(`第${phaseNum}阶段!`, 'phase');
+        sound.playPhaseShift();
       }
     }
 
@@ -624,6 +668,7 @@ function animate() {
     // Player dodge visual feedback (transparency)
     if (combatState.isDodging && !prevCombatDodging) {
       combatHUD?.showCombatMessage('闪避!', 'dodge');
+      sound.playDodge();
     }
     prevCombatDodging = combatState.isDodging;
 

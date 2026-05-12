@@ -95,7 +95,37 @@ export class ThirdPersonCamera {
     this.shakeTimer = Math.max(this.shakeTimer, duration);
   }
 
+  // L0 质点聚焦: zoom towards a world-space target
+  private zoomTarget: THREE.Vector3 | null = null;
+  private zoomDistance = 5;
+  private zoomTimer = 0;
+  private zoomDuration = 5;
+
+  /** L0 质点聚焦: smoothly zoom camera towards target position. */
+  zoomToTarget(target: THREE.Vector3, distance: number, duration: number): void {
+    this.zoomTarget = target.clone();
+    this.zoomDistance = distance;
+    this.zoomTimer = duration;
+    this.zoomDuration = duration;
+  }
+
+  /** Check if currently zoomed in. */
+  get isZoomedIn(): boolean {
+    return this.zoomTimer > 0;
+  }
+
   update(target: THREE.Object3D): void {
+    const dt = 0.016; // approx frame time
+
+    // L0 zoom-to-target
+    if (this.zoomTimer > 0) {
+      this.zoomTimer -= dt;
+      // Temporarily override orbitDist for smooth zoom
+      const t = Math.min(1, this.zoomTimer / this.zoomDuration);
+      const originalDist = this.orbitDist;
+      this.orbitDist = this.zoomDistance + (originalDist - this.zoomDistance) * t;
+    }
+
     // Smooth yaw reset
     if (this.targetYaw !== null) {
       const diff = this.targetYaw - this.yaw;
@@ -103,13 +133,12 @@ export class ThirdPersonCamera {
         this.yaw = this.targetYaw;
         this.targetYaw = null;
       } else {
-        this.yaw += diff * Math.min(1, this.resetSpeed * 0.016);
+        this.yaw += diff * Math.min(1, this.resetSpeed * dt);
       }
     }
 
     // Update shake
     if (this.shakeTimer > 0) {
-      const dt = 0.016; // approx frame time
       this.shakeTimer -= dt;
       const strength = this.shakeIntensity * (this.shakeTimer / 0.3);
       this.shakeOffset.set(

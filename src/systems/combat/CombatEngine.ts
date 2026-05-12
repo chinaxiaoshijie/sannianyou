@@ -5,6 +5,7 @@ import { BossAI, type BossState } from '../../bosses/BossAI';
 import type { LawManager } from '../../core/LawManager';
 import type { EquipmentManager } from '../../systems/EquipmentManager';
 import type { Law } from '../../types/equipment';
+import { DamageNumbers } from './DamageNumbers';
 
 export type CombatPhase = 'NONE' | 'STARTING' | 'ACTIVE' | 'VICTORY' | 'DEFEAT';
 
@@ -41,6 +42,9 @@ export interface CombatState {
   phaseTransitionJustHappened: boolean;
   /** Which law was just activated (for visual effects), null otherwise. */
   lawJustActivated: Law | null;
+  /** L3 critical window info */
+  criticalActive: boolean;
+  criticalMass: number;
 }
 
 const DODGE_DURATION = 0.2;
@@ -77,6 +81,9 @@ export class CombatEngine {
   // Per-frame event flags (cleared after getState is called)
   private phaseTransitionJustHappened = false;
   private lawJustActivated: Law | null = null;
+
+  // Damage numbers
+  private damageNumbers: DamageNumbers | null = null;
 
   // Input edge detection (only trigger on first press, not held)
   private prevInput: CombatInput = { dodge: false, lawSlot1: false, lawSlot2: false, lawSlot3: false };
@@ -118,6 +125,9 @@ export class CombatEngine {
 
     scene.add(this.bossModel.group);
 
+    // Damage numbers system
+    this.damageNumbers = new DamageNumbers(scene);
+
     // Reset input edge detection
     this.prevInput = { dodge: false, lawSlot1: false, lawSlot2: false, lawSlot3: false };
   }
@@ -154,12 +164,16 @@ export class CombatEngine {
     // Active combat
     if (this.phase !== 'ACTIVE') {
       this.bossModel?.update(dt);
+      this.damageNumbers?.update(dt);
       return this.getState();
     }
 
     // Reset per-frame flags at start of each active frame
     this.phaseTransitionJustHappened = false;
     this.lawJustActivated = null;
+
+    // Update damage numbers
+    this.damageNumbers?.update(dt);
 
     // Update dodge
     if (this.isDodging) {
@@ -191,12 +205,23 @@ export class CombatEngine {
           const result = this.bossAI.onPlayerHit();
           if (result.type === 'hit') {
             this.playerHP = Math.max(0, this.playerHP - result.damage);
+            this.damageNumbers?.spawn({
+              text: `-${result.damage}`,
+              position: playerPos.clone(),
+              type: 'player_hit',
+            });
             if (this.playerHP <= 0) {
               this.phase = 'DEFEAT';
             }
           }
         } else {
           // Player dodged the actual hit
+          this.damageNumbers?.spawn({
+            text: '闪避',
+            position: playerPos.clone(),
+            type: 'dodge',
+            scale: 0.8,
+          });
           this.bossAI.onPlayerDodge();
         }
       }
@@ -212,6 +237,9 @@ export class CombatEngine {
     if (this.bossHP <= 0 && this.phase === 'ACTIVE') {
       this.phase = 'VICTORY';
     }
+
+    // Natural HP/MP regen during combat at half rate (§6.4)
+    this.playerHP = Math.min(this.playerMaxHP, this.playerHP + 0.25 * dt);
 
     // Clamp player HP
     this.playerHP = Math.max(0, this.playerHP);
@@ -233,38 +261,147 @@ export class CombatEngine {
     }
   }
 
+  // Active critical window (L3 精确打击)
+  private criticalWindowEnd = 0;
+  private criticalMass = 50;
+  // Player speed tracking for F=ma
+  private lastPlayerPos = new THREE.Vector3();
+
   /** Try to activate a law from the given slot. */
   private tryActivateLaw(slot: number): void {
     if (!this.lawManager || !this.bossModel || !this.bossAI) return;
 
     const result = this.lawManager.activateLaw(slot);
-    if (!result.success) return;
+    if (!result.success || !result.law) return;
 
-    // Apply law damage to BOSS
-    let damage = LAW_BASE_DAMAGE;
+    const law = result.law;
+    this.lawJustActivated = law;
 
-    // More damage during weakness
+    const bossPos = this.bossModel.getPosition();
+    const params = law.effectParams;
+
+    switch (law.effectType) {
+      case 'visualInfo': { // L0 质点聚焦
+        const zoomDist = Number(params.zoomDistance) || 5;
+        const duration = Number(params.highlightDuration) || 5;
+        this.bossModel.setCoreWireframe(true, duration);
+        // Camera zoom is handled by main.ts via lawJustActivated flag
+        break;
+      }
+
+      case 'prediction': // L1 匀变预判 — pure visual (LawEffects handles it)
+        break;
+
+      case 'aoe': { // L1 自由落体
+        const baseDmg = Number(params.baseDamage) || 30;
+        this.applyDamage(baseDmg);
+        break;
+      }
+
+      case 'counter': { // L2 弹力反震
+        const kbDist = Number(params.knockbackDistance) || 5;
+        const stunDur = Number(params.stunDuration) || 1.5;
+        // Use a position slightly behind the BOSS from the arena center
+        const knockDir = new THREE.Vector3().subVectors(bossPos, this.arenaCenter).setY(0).normalize();
+        // If boss is at arena center, push toward player's general direction
+        if (knockDir.lengthSq() < 0.1) {
+          knockDir.set(1, 0, 0);
+        }
+        this.bossModel.pushBack(bossPos.clone().add(knockDir.clone().multiplyScalar(-1)), kbDist);
+        this.bossAI.stun(stunDur);
+        break;
+      }
+
+      case 'zone': { // L2 摩擦场
+        const slowPct = Number(params.slowPercent) || 40;
+        const zoneDur = Number(params.duration) || 5;
+        // Slows attack interval by proportional multiplier (>1 = slower attacks)
+        this.bossAI.setAttackIntervalMultiplier(1 + slowPct / 100, zoneDur);
+        break;
+      }
+
+      case 'critical': { // L3 精确打击 (F=ma)
+        const windowDur = Number(params.windowDuration) || 1.5;
+        this.criticalWindowEnd = windowDur;
+        this.criticalMass = 50;
+        break;
+      }
+
+      case 'buff': { // L3 惯性闪避
+        const speedBoost = (Number(params.speedBoost) || 30) / 100 + 1;
+        const buffDur = Number(params.duration) || 3;
+        // Speed buff applied by main.ts via player.setSpeedMultiplier
+        this.speedBuffQueued = speedBoost;
+        this.speedBuffDuration = buffDur;
+        break;
+      }
+
+      default:
+        // Fallback: deal base damage
+        this.applyDamage(LAW_BASE_DAMAGE);
+        break;
+    }
+  }
+
+  private speedBuffQueued = 1;
+  private speedBuffDuration = 0;
+
+  /** Consume speed buff (called from main.ts each frame). */
+  consumeSpeedBuff(): { multiplier: number; duration: number } | null {
+    if (this.speedBuffQueued > 1) {
+      const r = { multiplier: this.speedBuffQueued, duration: this.speedBuffDuration };
+      this.speedBuffQueued = 1;
+      return r;
+    }
+    return null;
+  }
+
+  /** Apply flat damage to BOSS (used by aoe and fallback). */
+  private applyDamage(damage: number): void {
+    if (!this.bossModel || !this.bossAI) return;
+
     if (this.bossAI.getState() === 'WEAKNESS') {
       damage *= 2;
     }
 
-    // Scale by law tier
-    if (result.law) {
-      const tierMultiplier: Record<string, number> = { L0: 1, L1: 1.3, L2: 1.7, L3: 2.2 };
-      damage *= tierMultiplier[result.law.tier] ?? 1;
-      // Store for visual effects
-      this.lawJustActivated = result.law;
-    }
-
-    // Equipment bonus: weapon mechanism damage bonus
+    // Equipment bonus
     const weaponMech = this.equipmentManager?.getMechanism('weapon');
     if (weaponMech && weaponMech.params.damageBonusPerFail) {
-      const bonusPct = weaponMech.params.damageBonusPerFail as number;
-      damage *= 1 + bonusPct / 100;
+      damage *= 1 + (weaponMech.params.damageBonusPerFail as number) / 100;
     }
 
     this.bossHP = Math.max(0, this.bossHP - damage);
     this.bossModel.flash();
+    this.damageNumbers?.spawn({
+      text: `-${Math.round(damage)}`,
+      position: this.bossModel.getPosition().clone(),
+      type: this.bossAI.getState() === 'WEAKNESS' ? 'boss_crit' : 'boss_hit',
+    });
+  }
+
+  /** Update critical window (L3) and player position tracking. */
+  updateCriticalWindow(dt: number, playerPos: THREE.Vector3): void {
+    this.lastPlayerPos.copy(playerPos);
+    if (this.criticalWindowEnd > 0) {
+      this.criticalWindowEnd -= dt;
+    }
+  }
+
+  /** Check if critical window is active (L3). */
+  get isCriticalActive(): boolean {
+    return this.criticalWindowEnd > 0;
+  }
+
+  /** Get current critical mass value (L3). */
+  get massValue(): number {
+    return this.criticalMass;
+  }
+
+  /** Deal critical damage based on player speed (L3: F=ma). */
+  dealCriticalDamage(playerSpeed: number): void {
+    const damage = playerSpeed * this.criticalMass;
+    this.applyDamage(damage);
+    this.criticalWindowEnd = 0;
   }
 
   /** End combat and clean up scene objects. */
@@ -328,6 +465,8 @@ export class CombatEngine {
       startingTimer: this.startingTimer,
       phaseTransitionJustHappened: pt,
       lawJustActivated: law,
+      criticalActive: this.criticalWindowEnd > 0,
+      criticalMass: this.criticalMass,
     };
   }
 

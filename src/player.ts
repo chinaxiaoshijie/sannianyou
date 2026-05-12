@@ -36,6 +36,28 @@ export class Player {
   private rightLeg!: THREE.Mesh;
   private walkDistance = 0;
 
+  // Hit flash + invincibility
+  private flashTimer = 0;
+  private flashDuration = 0.3;
+  private invincible = false;
+  private invincibleTimer = 0;
+  private invincibleDuration = 1.0;
+
+  // Speed buff (L3 惯性闪避)
+  private speedMultiplier = 1;
+  private speedBuffTimer = 0;
+
+  /** L3 惯性闪避: set speed multiplier for duration. */
+  setSpeedMultiplier(mult: number, duration: number): void {
+    this.speedMultiplier = mult;
+    this.speedBuffTimer = duration;
+  }
+
+  /** Get current max speed (accounting for buffs). */
+  get effectiveSpeed(): number {
+    return MOVE_SPEED * this.speedMultiplier;
+  }
+
   constructor() {
     this.mesh = this.createModel();
     // Spawn at gate entrance (z=-69), safely outside library BOSS trigger (x=74, z=-35)
@@ -154,8 +176,45 @@ export class Player {
     return g;
   }
 
-  /* ────── Movement & collision (unchanged logic) ────── */
+  /* ────── Movement & collision ────── */
   update(dt: number, input: InputState, buildingBoxes: THREE.Box3[]) {
+    // Update speed buff timer (L3, even when idle)
+    if (this.speedBuffTimer > 0) {
+      this.speedBuffTimer -= dt;
+      if (this.speedBuffTimer <= 0) {
+        this.speedMultiplier = 1;
+      }
+    }
+
+    // Update hit flash
+    if (this.flashTimer > 0) {
+      this.flashTimer -= dt;
+      const t = this.flashTimer / this.flashDuration;
+      // Pulsing white overlay
+      const flashAlpha = t > 0.5 ? (1 - t) * 2 : t * 2;
+      this.mesh.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshToonMaterial) {
+          child.material.emissive?.setHex(0xffffff);
+          child.material.emissiveIntensity = flashAlpha;
+        }
+      });
+      if (this.flashTimer <= 0) {
+        this.mesh.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshToonMaterial) {
+            child.material.emissiveIntensity = 0;
+          }
+        });
+      }
+    }
+
+    // Update invincibility
+    if (this.invincibleTimer > 0) {
+      this.invincibleTimer -= dt;
+      if (this.invincibleTimer <= 0) {
+        this.invincible = false;
+      }
+    }
+
     const moveDir = new THREE.Vector3(0, 0, 0);
 
     if (input.forward) moveDir.z -= 1;
@@ -174,8 +233,10 @@ export class Player {
     }
 
     moveDir.normalize();
-    const displacement = moveDir.multiplyScalar(MOVE_SPEED * dt);
-    this.walkDistance += MOVE_SPEED * dt;
+
+    const speed = this.effectiveSpeed;
+    const displacement = moveDir.multiplyScalar(speed * dt);
+    this.walkDistance += speed * dt;
 
     // ── Walk animation ──
     const bob = Math.sin(this.walkDistance * 4) * 0.06;
@@ -201,6 +262,19 @@ export class Player {
     // Face movement direction
     const angle = Math.atan2(displacement.x, displacement.z);
     this.mesh.rotation.y = angle;
+  }
+
+  /** Trigger hit flash + invincibility. Returns false if already invincible. */
+  flashHit(): boolean {
+    if (this.invincible) return false;
+    this.flashTimer = this.flashDuration;
+    this.invincible = true;
+    this.invincibleTimer = this.invincibleDuration;
+    return true;
+  }
+
+  get isInvincible(): boolean {
+    return this.invincible;
   }
 
   private collidesAt(x: number, z: number, boxes: THREE.Box3[]): boolean {

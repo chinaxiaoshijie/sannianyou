@@ -112,7 +112,6 @@ export class TutorialManager {
   /** Force-complete the tutorial (e.g., when combat starts on last step). */
   complete(): void {
     this._isComplete = true;
-    localStorage.setItem(COMPLETE_KEY, 'true');
     this.hideOverlay();
   }
 
@@ -149,51 +148,18 @@ export class TutorialManager {
   /* ── Private ── */
 
   private loadProgress(): void {
-    const fresh = sessionStorage.getItem('tutorial_fresh');
-
-    const savedComplete = localStorage.getItem(COMPLETE_KEY);
-
-    if (savedComplete === 'true') {
-      // Completed in a previous session — reset on fresh tab
-      if (!fresh) {
-        sessionStorage.setItem('tutorial_fresh', '1');
-        console.log('🔄 检测到首次会话，重置新手引导');
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(COMPLETE_KEY);
-        this.currentStepIndex = 0;
-        this._isComplete = false;
-        this.movedOnce = false;
-        this.interactedOnce = false;
-        return;
-      }
-      this._isComplete = true;
-      return;
-    }
-
-    // Not completed — but still reset partial progress on fresh tab to avoid stale state
-    if (!fresh) {
-      sessionStorage.setItem('tutorial_fresh', '1');
-      console.log('🔄 新标签页，重置教程进度');
-      localStorage.removeItem(STORAGE_KEY);
-      this.currentStepIndex = 0;
-      this._isComplete = false;
-      this.movedOnce = false;
-      this.interactedOnce = false;
-      console.log('📖 新手引导: 从步骤 1 重新开始 (共 ' + this.steps.length + ' 步)');
-      return;
-    }
-
-    const savedStep = localStorage.getItem(STORAGE_KEY);
-    if (savedStep) {
-      this.currentStepIndex = parseInt(savedStep, 10);
-      if (isNaN(this.currentStepIndex) || this.currentStepIndex < 0 || this.currentStepIndex >= this.steps.length) {
-        this.currentStepIndex = 0;
-      }
-    }
+    // Always start fresh — tutorial is short (5 steps) and important for new players.
+    // Removed complex cross-session persistence that was hiding the tutorial after
+    // the old auto-complete-at-step-2 behavior wrote stale COMPLETE_KEY.
+    this.currentStepIndex = 0;
+    this._isComplete = false;
+    this.movedOnce = false;
+    this.interactedOnce = false;
+    console.log('📖 新手引导: 共 ' + this.steps.length + ' 步');
   }
 
   private saveProgress(): void {
-    localStorage.setItem(STORAGE_KEY, String(this.currentStepIndex));
+    // Simplified: only track current step within this session
   }
 
   private buildContext(playerPos: THREE.Vector3): TutorialContext {

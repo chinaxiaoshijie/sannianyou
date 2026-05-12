@@ -35,6 +35,11 @@ export class BossAI {
   // Attack interval decreases slightly in later phases
   private baseAttackInterval = 2.5;
 
+  // Stun & attack speed modifiers
+  private stunTimer = 0;
+  private attackIntervalMultiplier = 1;
+  private attackIntervalModEnd = 0;
+
   constructor(data: BossData) {
     this.data = data;
     if (data.phases.length === 0) {
@@ -46,6 +51,20 @@ export class BossAI {
   /** Set the scene reference for adding/removing warning geometry. */
   setScene(scene: THREE.Scene): void {
     this.scene = scene;
+  }
+
+  /** L2 弹力反震: stun the BOSS, forcing recovery. */
+  stun(duration: number): void {
+    this.clearWarning();
+    this.state = 'RECOVERY';
+    this.stateTimer = duration;
+    this.stunTimer = duration;
+  }
+
+  /** L2 摩擦场: slow BOSS attack interval by a multiplier for duration. */
+  setAttackIntervalMultiplier(mult: number, duration: number): void {
+    this.attackIntervalMultiplier = mult;
+    this.attackIntervalModEnd = duration;
   }
 
   /** Update AI state machine. Returns ActiveAttack if warning is active. */
@@ -151,7 +170,16 @@ export class BossAI {
 
   private updateIdle(dt: number, bossPos: THREE.Vector3, playerPos: THREE.Vector3): void {
     this.attackTimer += dt;
-    const interval = this.baseAttackInterval - this.currentPhase.index * 0.3;
+
+    // Update attack interval modifier (L2 friction field)
+    if (this.attackIntervalModEnd > 0) {
+      this.attackIntervalModEnd -= dt;
+      if (this.attackIntervalModEnd <= 0) {
+        this.attackIntervalMultiplier = 1;
+      }
+    }
+
+    const interval = (this.baseAttackInterval - this.currentPhase.index * 0.3) * this.attackIntervalMultiplier;
     if (this.attackTimer >= Math.max(1.5, interval)) {
       this.attackTimer = 0;
       this.startWarning(bossPos, playerPos);
@@ -193,7 +221,7 @@ export class BossAI {
     const mat = new THREE.MeshBasicMaterial({
       color: 0xff3333,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.5,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
@@ -213,25 +241,25 @@ export class BossAI {
         const geo = new THREE.ShapeGeometry(shape);
         const mesh = new THREE.Mesh(geo, mat);
         mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(bossPos.x, 0.03, bossPos.z);
+        mesh.position.set(bossPos.x, 0.05, bossPos.z);
         mesh.rotation.z = -this.getFacingAngle(bossPos, playerPos) + Math.PI / 2;
         return mesh;
       }
       case 'circle': {
         const radius = attack.warningRadius ?? 3;
-        const geo = new THREE.RingGeometry(0, radius, 32);
+        const geo = new THREE.RingGeometry(radius - 0.2, radius, 48);
         const mesh = new THREE.Mesh(geo, mat);
         mesh.rotation.x = -Math.PI / 2;
         const center = this.getAttackCenter(attack, bossPos, playerPos);
-        mesh.position.set(center.x, 0.03, center.z);
+        mesh.position.set(center.x, 0.05, center.z);
         return mesh;
       }
       case 'line': {
         const length = 12;
-        const geo = new THREE.PlaneGeometry(0.4, length);
+        const geo = new THREE.PlaneGeometry(0.8, length);
         const mesh = new THREE.Mesh(geo, mat);
         mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(bossPos.x, 0.03, bossPos.z);
+        mesh.position.set(bossPos.x, 0.05, bossPos.z);
         const angle = this.getFacingAngle(bossPos, playerPos);
         mesh.rotation.z = -angle + Math.PI / 2;
         return mesh;
