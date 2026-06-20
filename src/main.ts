@@ -232,6 +232,10 @@ const combatInput = { dodge: false, lawSlot1: false, lawSlot2: false, lawSlot3: 
 // Track previous dodge state to avoid spamming messages
 let prevCombatDodging = false;
 let prevWeaknessActive = false;
+// Track previous player HP for hit detection (module-level to persist across frames)
+let prevCombatHP = 100;
+// Track previous player position for speed calculation (L3 F=ma)
+const prevPlayerPos = new THREE.Vector3();
 
 // Combat key bindings (space = dodge, 1/2/3 = laws)
 window.addEventListener('keydown', (e) => {
@@ -289,6 +293,8 @@ function startRealtimeCombat(): void {
   bossTriggered = true;
 
   const playerXinLi = stateManager.getPlayerState().xinLi;
+  // Sync HP tracker to current player HP so first frame won't false-trigger hit flash
+  prevCombatHP = playerXinLi;
   const arenaCenter = new THREE.Vector3(BOSS_TRIGGER.x, 0, BOSS_TRIGGER.z);
 
   // Save player world position for post-combat restore
@@ -348,6 +354,8 @@ function endRealtimeCombat(victory: boolean): void {
   combatInput.lawSlot1 = false;
   combatInput.lawSlot2 = false;
   combatInput.lawSlot3 = false;
+  // Reset HP tracker so next combat starts clean
+  prevCombatHP = 100;
 
   if (victory) {
     // Award rewards
@@ -573,15 +581,27 @@ function animate() {
     lawHUD.update(dt);
   }
 
-    // Track previous HP for damage detection
-    let prevCombatHP = 100;
-
     // Combat engine update
     if (inCombat && combatEngine) {
       const combatState = combatEngine.update(dt, player.mesh.position, combatInput);
 
-      // Update critical window & player speed tracking (L3)
+      // Update critical window & player speed tracking (L3 精确打击 F=ma)
       combatEngine.updateCriticalWindow(dt, player.mesh.position);
+
+      // L3 精确打击: while critical window is open, deal damage based on player speed
+      if (combatEngine.isCriticalActive && dt > 0) {
+        const dx = player.mesh.position.x - prevPlayerPos.x;
+        const dz = player.mesh.position.z - prevPlayerPos.z;
+        const playerSpeed = Math.sqrt(dx * dx + dz * dz) / dt;
+        if (playerSpeed > 0.5) {
+          // Only trigger once (isCriticalActive will become false after dealCriticalDamage)
+          combatEngine.dealCriticalDamage(playerSpeed);
+          camera.shake(0.5, 0.3);
+          sound.playLaw();
+          combatHUD?.showCombatMessage('精确打击! F=ma', 'hit');
+        }
+      }
+      prevPlayerPos.copy(player.mesh.position);
 
       // Update law cooldowns during combat
       lawManager.updateCooldowns(dt);

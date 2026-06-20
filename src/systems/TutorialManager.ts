@@ -112,6 +112,11 @@ export class TutorialManager {
   /** Force-complete the tutorial (e.g., when combat starts on last step). */
   complete(): void {
     this._isComplete = true;
+    try {
+      localStorage.setItem(COMPLETE_KEY, 'true');
+    } catch {
+      // ignore storage errors
+    }
     this.hideOverlay();
   }
 
@@ -148,18 +153,31 @@ export class TutorialManager {
   /* ── Private ── */
 
   private loadProgress(): void {
-    // Always start fresh — tutorial is short (5 steps) and important for new players.
-    // Removed complex cross-session persistence that was hiding the tutorial after
-    // the old auto-complete-at-step-2 behavior wrote stale COMPLETE_KEY.
-    this.currentStepIndex = 0;
-    this._isComplete = false;
+    try {
+      if (localStorage.getItem(COMPLETE_KEY) === 'true') {
+        this._isComplete = true;
+        return;
+      }
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) {
+        const idx = parseInt(saved, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < this.steps.length) {
+          this.currentStepIndex = idx;
+        }
+      }
+    } catch {
+      // localStorage unavailable (e.g. private browsing); start fresh silently
+    }
     this.movedOnce = false;
     this.interactedOnce = false;
-    console.log('📖 新手引导: 共 ' + this.steps.length + ' 步');
   }
 
   private saveProgress(): void {
-    // Simplified: only track current step within this session
+    try {
+      localStorage.setItem(STORAGE_KEY, String(this.currentStepIndex));
+    } catch {
+      // ignore storage errors
+    }
   }
 
   private buildContext(playerPos: THREE.Vector3): TutorialContext {
