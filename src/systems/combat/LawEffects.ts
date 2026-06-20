@@ -21,9 +21,10 @@ export class LawEffects {
     this.scene = scene;
   }
 
-  /** Play a visual effect for the given law at the specified positions. */
-  play(law: Law, bossPos: THREE.Vector3, playerPos: THREE.Vector3): void {
-    const effect = this.createEffect(law, bossPos, playerPos);
+  /** Play a visual effect for the given law at the specified positions.
+   *  getBossPos, if provided, is called each frame so effects can track the live BOSS position. */
+  play(law: Law, bossPos: THREE.Vector3, playerPos: THREE.Vector3, getBossPos?: () => THREE.Vector3): void {
+    const effect = this.createEffect(law, bossPos, playerPos, getBossPos);
     if (effect) {
       this.activeEffects.push(effect);
     }
@@ -57,10 +58,11 @@ export class LawEffects {
     law: Law,
     bossPos: THREE.Vector3,
     playerPos: THREE.Vector3,
+    getBossPos?: () => THREE.Vector3,
   ): ActiveEffect | null {
     switch (law.effectType) {
       case 'visualInfo': return this.createVisualInfo(law, bossPos);
-      case 'prediction': return this.createPrediction(law, bossPos);
+      case 'prediction': return this.createPrediction(law, bossPos, getBossPos);
       case 'aoe': return this.createAoe(law, bossPos, playerPos);
       case 'counter': return this.createCounter(law, bossPos);
       case 'zone': return this.createZone(law, bossPos);
@@ -116,8 +118,8 @@ export class LawEffects {
     };
   }
 
-  /** prediction — ground arrows showing BOSS predicted landing spots. */
-  private createPrediction(law: Law, bossPos: THREE.Vector3): ActiveEffect {
+  /** prediction — ground arrows tracking BOSS predicted landing spots. */
+  private createPrediction(law: Law, bossPos: THREE.Vector3, getBossPos?: () => THREE.Vector3): ActiveEffect {
     const duration = Number(law.effectParams.predictTime) || 1.5;
     const colorHex = (law.effectParams.arrowColor as string) || '#4A90D9';
     const color = new THREE.Color(colorHex);
@@ -130,6 +132,8 @@ export class LawEffects {
       const arrow = createGroundArrow(color, arrowLength);
       arrow.position.set(bossPos.x + offset, 0.05, bossPos.z + offset * 0.5);
       arrow.userData.seqIndex = i;
+      arrow.userData.offsetX = (i - 1) * 2;
+      arrow.userData.offsetZ = (i - 1);
       this.scene.add(arrow);
       meshes.push(arrow);
     }
@@ -139,9 +143,15 @@ export class LawEffects {
       elapsed: 0,
       duration,
       update: (_dt: number, elapsed: number) => {
+        // Track live BOSS position so arrows follow predicted landing spot
+        const livePos = getBossPos ? getBossPos() : bossPos;
         const t = 1 - elapsed / duration;
         for (const arrow of meshes) {
           const idx = arrow.userData.seqIndex as number;
+          const ox = arrow.userData.offsetX as number;
+          const oz = arrow.userData.offsetZ as number;
+          // Update position each frame to follow BOSS movement
+          arrow.position.set(livePos.x + ox, 0.05, livePos.z + oz);
           const appearT = Math.max(0, Math.min(1, (t * 3 - idx)));
           arrow.scale.setScalar(appearT);
           const firstChild = arrow.children[0];

@@ -1,6 +1,7 @@
 import type { StateManager } from '../core/StateManager';
 import type { Equipment, Equipped, EquipmentMechanism, EquipSlot, EquipmentData, Rarity } from '../types/equipment';
 import equipmentData from '../data/equipment.json';
+import { EventEmitter } from '../core/EventEmitter';
 
 const RARITY_CONFIG: Record<Rarity, { name: string; color: string; mult: number }> = {
   common: { name: '普通', color: '#CCCCCC', mult: 1.0 },
@@ -8,30 +9,6 @@ const RARITY_CONFIG: Record<Rarity, { name: string; color: string; mult: number 
   epic: { name: '史诗', color: '#9B59B6', mult: 1.6 },
   legendary: { name: '传说', color: '#FF8C00', mult: 2.0 },
 };
-
-class EventEmitter {
-  private listeners: Map<string, Array<(...args: unknown[]) => void>> = new Map();
-
-  on(event: string, fn: (...args: unknown[]) => void): void {
-    if (!this.listeners.has(event)) this.listeners.set(event, []);
-    this.listeners.get(event)!.push(fn);
-  }
-
-  off(event: string, fn: (...args: unknown[]) => void): void {
-    const fns = this.listeners.get(event);
-    if (fns) {
-      const idx = fns.indexOf(fn);
-      if (idx !== -1) fns.splice(idx, 1);
-    }
-  }
-
-  emit(event: string, ...args: unknown[]): void {
-    const fns = this.listeners.get(event);
-    if (fns) {
-      for (const fn of fns) fn(...args);
-    }
-  }
-}
 
 /**
  * EquipmentManager — loads equipment data, handles equip/unequip,

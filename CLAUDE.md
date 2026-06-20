@@ -35,7 +35,7 @@ sannianyou-3d/
 │   │   └── world/WorldManager.ts    # 建筑交互 + E 键提示
 │   ├── ui/
 │   │   ├── HUD.ts          # 指南针 + 交互提示
-│   │   └── CombatUI.ts     # 战斗 UI（待重写）
+│   │   └── CombatHUD.ts    # 战斗 UI（BOSS 血条 + 浮动消息 + 战斗结算面板）
 │   ├── data/               # JSON 数据文件
 │   └── types/              # TypeScript 类型定义
 ├── docs/
@@ -95,6 +95,9 @@ Every task follows: **Question → Options → Decision → Draft → Approval**
 ## Current Phase
 
 - ✅ Phase 0-6: **MVP 全部完成！** 🎉
-- 27 TypeScript 文件 / ~7,600 行
-- Build: tsc ✅ vite ✅ (692KB)
+- ✅ P0/P1 bugs fixed (2026-06-20): prevCombatHP scoping, L3 damage trigger, tutorial persistence, 才气 error UI, BossModel scale conflict, console.log cleanup, BOSS trigger coords
+- ✅ P2 design completeness (2026-06-20): daily double reward, 练习册 wrong-chapter +3s, 状元笔记 time×1.5, projectile ballistics, burst 3-shot, prediction arrow tracking
+- ✅ P3 code quality (2026-06-20): shared EventEmitter, removed legacy CombatResult/Skill types, dt-based time accumulation, CLAUDE.md updated
+- 28 TypeScript 文件 / ~8,200 行
+- Build: tsc ✅ vite ✅ (~718KB)
 - Ready for playtest at http://localhost:5173

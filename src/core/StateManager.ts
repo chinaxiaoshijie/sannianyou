@@ -1,33 +1,7 @@
 import type { PlayerState, GameState, CombatState, Rank } from '../types';
 import type { GameConfig } from '../types';
 import type { Equipped } from '../types/equipment';
-
-/**
- * Tiny EventEmitter for pub/sub change notifications.
- */
-class EventEmitter {
-  private listeners: Map<string, Array<(...args: unknown[]) => void>> = new Map();
-
-  on(event: string, fn: (...args: unknown[]) => void): void {
-    if (!this.listeners.has(event)) this.listeners.set(event, []);
-    this.listeners.get(event)!.push(fn);
-  }
-
-  off(event: string, fn: (...args: unknown[]) => void): void {
-    const fns = this.listeners.get(event);
-    if (fns) {
-      const idx = fns.indexOf(fn);
-      if (idx !== -1) fns.splice(idx, 1);
-    }
-  }
-
-  emit(event: string, ...args: unknown[]): void {
-    const fns = this.listeners.get(event);
-    if (fns) {
-      for (const fn of fns) fn(...args);
-    }
-  }
-}
+import { EventEmitter } from './EventEmitter';
 
 /**
  * StateManager — framework-agnostic game state store.

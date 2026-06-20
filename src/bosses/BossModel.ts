@@ -23,6 +23,7 @@ export class BossModel {
   private pushBackTimer = 0;
   // Health-ratio base scale (applied to body, separate from phase animation)
   private bodyBaseScale = 1;
+  private time = 0;
 
   constructor(data: BossData, position = new THREE.Vector3(0, 0, 0)) {
     this.group = new THREE.Group();
@@ -190,13 +191,14 @@ export class BossModel {
 
   /** Update animations. Call every frame with dt. */
   update(dt: number): void {
+    this.time += dt;
     // Book slow rotation
     this.body.rotation.y += dt * 0.15;
 
     // Core pulse
-    const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.15;
+    const pulse = 1 + Math.sin(this.time * 1000 * 0.005) * 0.15;
     this.core.scale.setScalar(pulse);
-    this.coreLight.intensity = 1.5 + Math.sin(Date.now() * 0.003) * 0.5;
+    this.coreLight.intensity = 1.5 + Math.sin(this.time * 1000 * 0.003) * 0.5;
 
     // Paper orbit
     for (const paper of this.papers) {
@@ -271,7 +273,7 @@ export class BossModel {
     if (!this.phaseTransition) {
       this.body.scale.setScalar(s);
     }
-    this.core.scale.setScalar(s * (1 + Math.sin(Date.now() * 0.005) * 0.15));
+    this.core.scale.setScalar(s * (1 + Math.sin(this.time * 1000 * 0.005) * 0.15));
     // Core gets redder as HP drops
     const r = 1.0;
     const g = 0.53 * ratio;

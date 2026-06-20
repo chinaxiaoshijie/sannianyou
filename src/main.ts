@@ -621,7 +621,7 @@ function animate() {
         if (combatState.lawJustActivated) {
           const law = combatState.lawJustActivated;
           const bossPos = combatEngine.getBossGroup()?.position ?? new THREE.Vector3(BOSS_TRIGGER.x, 0, BOSS_TRIGGER.z);
-          lawEffects.play(law, bossPos, player.mesh.position);
+          lawEffects.play(law, bossPos, player.mesh.position, () => combatEngine?.getBossGroup()?.position ?? bossPos);
 
           switch (law.effectType) {
             case 'visualInfo':

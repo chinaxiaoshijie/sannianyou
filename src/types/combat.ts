@@ -39,20 +39,4 @@ export interface Question {
   law?: string;
 }
 
-export interface CombatResult {
-  correct: boolean;
-  damage: number;
-  comboBroken: boolean;
-  weaknessTriggered: boolean;
-}
 
-export interface Skill {
-  id: string;
-  name: string;
-  icon: string;
-  mpCost: number;
-  cooldown: number;
-  effect: 'bonusDamage' | 'heal' | 'doubleScore';
-  value: number;
-  description: string;
-}

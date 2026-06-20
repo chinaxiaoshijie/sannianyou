@@ -14,6 +14,9 @@ const QUESTIONS_PER_ROUND = 5;
 const BASE_TIME_LIMIT = 15; // seconds per question
 const KP_PER_CORRECT = 5;
 const LINGSHI_PER_CORRECT = 3;
+const DAILY_DOUBLE_LIMIT = 10; // first N correct answers per day get double rewards
+const DAILY_COUNT_KEY = 'cultivation_daily_correct'; // localStorage key
+const DAILY_DATE_KEY = 'cultivation_daily_date';     // localStorage key for date
 
 export class CultivationUI {
   private overlay: HTMLDivElement;
@@ -30,6 +33,34 @@ export class CultivationUI {
   private countdownStart = 0;
   private animFrameId = 0;
   private timeLimit = BASE_TIME_LIMIT; // computed with equipment bonuses
+  // Tracks chapters of wrong answers (for 练习册 bonus)
+  private wrongChapters: Set<string> = new Set();
+
+  // ── Daily double reward tracking ──
+  private getDailyCorrectCount(): number {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem(DAILY_DATE_KEY) !== today) {
+        localStorage.setItem(DAILY_DATE_KEY, today);
+        localStorage.setItem(DAILY_COUNT_KEY, '0');
+        return 0;
+      }
+      return parseInt(localStorage.getItem(DAILY_COUNT_KEY) ?? '0', 10);
+    } catch {
+      return 0;
+    }
+  }
+
+  private incrementDailyCorrect(): void {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      localStorage.setItem(DAILY_DATE_KEY, today);
+      const cur = parseInt(localStorage.getItem(DAILY_COUNT_KEY) ?? '0', 10);
+      localStorage.setItem(DAILY_COUNT_KEY, String(cur + 1));
+    } catch {
+      // ignore
+    }
+  }
 
   private mask!: HTMLDivElement;
   private content!: HTMLDivElement;
@@ -56,16 +87,18 @@ export class CultivationUI {
   }
 
   /** Compute effective time limit based on equipped items. */
-  private computeTimeLimit(): number {
+  private computeTimeLimit(chapter?: string): number {
     let limit = BASE_TIME_LIMIT;
-
-    // 练习册 (weapon): +3s time bonus on wrong-answer questions
     const weaponMech = this.equipmentManager?.getMechanism('weapon');
-    if (weaponMech && weaponMech.params.timeBonus) {
-      limit += weaponMech.params.timeBonus as number;
+
+    // 练习册: +3s for questions in a chapter where player previously answered wrong
+    if (weaponMech && weaponMech.params.timeBonus && chapter) {
+      if (this.wrongChapters.has(chapter)) {
+        limit += weaponMech.params.timeBonus as number;
+      }
     }
 
-    // 状元笔记 (weapon, legendary): time ×1.5
+    // 状元笔记: time ×1.5
     if (weaponMech && weaponMech.params.timeMultiplier) {
       limit *= weaponMech.params.timeMultiplier as number;
     }
@@ -144,6 +177,7 @@ export class CultivationUI {
   private startRound(): void {
     this.currentIndex = 0;
     this.result = { correct: 0, total: QUESTIONS_PER_ROUND, kpEarned: 0, lingShiEarned: 0 };
+    this.wrongChapters.clear();
 
     // Pick QUESTIONS_PER_ROUND random questions from physics pool
     const subjectQuestions = this.allQuestions.filter(q => q.subject === '物理');
@@ -165,6 +199,7 @@ export class CultivationUI {
     this.stopCountdownAnimation();
 
     const question = this.roundQuestions[this.currentIndex];
+    this.timeLimit = this.computeTimeLimit(question.chapter);
     const content = this.content;
 
     content.innerHTML = `
@@ -289,18 +324,35 @@ export class CultivationUI {
       }
     });
 
+    let kpGain = 0;
+    let lingShiGain = 0;
+    let isDouble = false;
     if (isCorrect) {
       this.result.correct++;
-      this.result.kpEarned += KP_PER_CORRECT;
-      this.result.lingShiEarned += LINGSHI_PER_CORRECT;
+      const dailyCount = this.getDailyCorrectCount();
+      isDouble = dailyCount < DAILY_DOUBLE_LIMIT;
+      const mult = isDouble ? 2 : 1;
+      kpGain = KP_PER_CORRECT * mult;
+      lingShiGain = LINGSHI_PER_CORRECT * mult;
+      this.result.kpEarned += kpGain;
+      this.result.lingShiEarned += lingShiGain;
+      this.incrementDailyCorrect();
+    } else if (question.chapter) {
+      // 练习册: record chapter so next question from same chapter gets +3s
+      this.wrongChapters.add(question.chapter);
     }
 
     // Show feedback
     const feedback = this.content.querySelector('#cult-feedback') as HTMLDivElement;
+    const rewardHint = isCorrect
+      ? (isDouble
+          ? `🌟 双倍奖励! 道行+${kpGain} 灵石+${lingShiGain}`
+          : `道行+${kpGain} 灵石+${lingShiGain}`)
+      : '没关系，继续下一题';
     feedback.innerHTML = `
       <div class="cult-feedback-title">${isCorrect ? '正确!' : '不正确'}</div>
       <div class="cult-feedback-explanation">${question.explanation}</div>
-      <div class="cult-feedback-hint">${isCorrect ? `道行+${KP_PER_CORRECT} 灵石+${LINGSHI_PER_CORRECT}` : '没关系，继续下一题'}</div>
+      <div class="cult-feedback-hint">${rewardHint}</div>
     `;
     feedback.style.opacity = '1';
 
@@ -329,6 +381,9 @@ export class CultivationUI {
         el.classList.add('cult-option-correct');
       }
     });
+
+    // 练习册: timeout counts as wrong — next question from same chapter gets +3s
+    if (question.chapter) this.wrongChapters.add(question.chapter);
 
     // Show timeout feedback
     const feedback = this.content.querySelector('#cult-feedback') as HTMLDivElement;

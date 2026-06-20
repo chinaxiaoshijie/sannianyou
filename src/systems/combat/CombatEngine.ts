@@ -122,6 +122,11 @@ export class CombatEngine {
     this.bossModel = new BossModel(demon, spawnPos ?? this.arenaCenter);
     this.bossAI = new BossAI(demon);
     this.bossAI.setScene(scene);
+    this.bossAI.onProjectileHit((damage) => {
+      if (this.isDodging) return;
+      this.playerHP = Math.max(0, this.playerHP - damage);
+      if (this.playerHP <= 0) this.phase = 'DEFEAT';
+    });
 
     scene.add(this.bossModel.group);
 

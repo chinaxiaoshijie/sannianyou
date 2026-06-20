@@ -2,35 +2,9 @@ import type { Law, LawData, Equipped } from '../types/equipment';
 import type { StateManager } from './StateManager';
 import type { EquipmentManager } from '../systems/EquipmentManager';
 import lawsData from '../data/laws.json';
+import { EventEmitter } from './EventEmitter';
 
 const MAX_SLOTS = 3;
-
-/**
- * Minimal EventEmitter for pub/sub change notifications.
- */
-class EventEmitter {
-  private listeners: Map<string, Array<(...args: unknown[]) => void>> = new Map();
-
-  on(event: string, fn: (...args: unknown[]) => void): void {
-    if (!this.listeners.has(event)) this.listeners.set(event, []);
-    this.listeners.get(event)!.push(fn);
-  }
-
-  off(event: string, fn: (...args: unknown[]) => void): void {
-    const fns = this.listeners.get(event);
-    if (fns) {
-      const idx = fns.indexOf(fn);
-      if (idx !== -1) fns.splice(idx, 1);
-    }
-  }
-
-  emit(event: string, ...args: unknown[]): void {
-    const fns = this.listeners.get(event);
-    if (fns) {
-      for (const fn of fns) fn(...args);
-    }
-  }
-}
 
 export interface LawSlot {
   law: Law | null;
