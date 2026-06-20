@@ -274,6 +274,11 @@ export class HUD {
     this.showSaveIndicator();
   }
 
+  /** Public trigger for save toast (called when save action completes). */
+  showSavedToast(): void {
+    this.showSaveIndicator();
+  }
+
   private refreshPlayer(player: PlayerState): void {
     this.rankEl.textContent = player.rank;
     this.kpEl.textContent = String(player.kp);

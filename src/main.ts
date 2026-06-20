@@ -139,7 +139,6 @@ if (new URLSearchParams(window.location.search).has('dev')) {
 let codexPanel: CodexPanel | null = null;
 try {
   codexPanel = new CodexPanel(stateManager, lawManager, equipmentManager);
-  console.log('[CodexPanel] 初始化成功');
 } catch (err) {
   console.error('[CodexPanel] 初始化失败:', err);
   // 游戏继续运行，只是图卷不可用
@@ -210,11 +209,9 @@ window.addEventListener('resize', () => {
 /* ===== WORLD INTERACTION ===== */
 worldManager.onInteraction = (building, action) => {
   if (action === 'save') {
-    console.log('游戏已保存!');
+    hud.showSavedToast?.();
   } else if (action === 'training') {
     cultivationUI.open('物理');
-  } else {
-    console.log(`${building.name} — 功能开发中`);
   }
 };
 
@@ -237,6 +234,22 @@ let prevCombatHP = 100;
 // Track previous player position for speed calculation (L3 F=ma)
 const prevPlayerPos = new THREE.Vector3();
 
+/** Show a law-activation error (才气不足 / 冷却中) in the combat HUD. */
+function showLawError(slotIndex: number): void {
+  if (!combatHUD) return;
+  const slots = lawManager.getSlots();
+  const slot = slots[slotIndex];
+  if (!slot?.law) return;
+  if (slot.cooldownRemaining > 0) {
+    combatHUD.showCombatMessage(`冷却中 (${slot.law.name})`, 'error');
+  } else {
+    const ps = stateManager.getPlayerState();
+    if (ps.caiQi < slot.law.cost) {
+      combatHUD.showCombatMessage(`才气不足 (需${slot.law.cost})`, 'error');
+    }
+  }
+}
+
 // Combat key bindings (space = dodge, 1/2/3 = laws)
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && inCombat) {
@@ -244,14 +257,17 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
   if (e.code === 'Digit1' && inCombat) {
+    if (!combatInput.lawSlot1) showLawError(0);
     combatInput.lawSlot1 = true;
     e.preventDefault();
   }
   if (e.code === 'Digit2' && inCombat) {
+    if (!combatInput.lawSlot2) showLawError(1);
     combatInput.lawSlot2 = true;
     e.preventDefault();
   }
   if (e.code === 'Digit3' && inCombat) {
+    if (!combatInput.lawSlot3) showLawError(2);
     combatInput.lawSlot3 = true;
     e.preventDefault();
   }
@@ -264,10 +280,10 @@ window.addEventListener('keyup', (e) => {
   if (e.code === 'Digit3') combatInput.lawSlot3 = false;
 });
 
-// BOSS trigger zone (图书馆前广场) — at world position (74, 0, -42)
+// BOSS trigger zone (图书馆前广场) — library is at world x=74-82, aligned to entrance at (78,-37)
 const BOSS_TRIGGER: { x: number; z: number; radius: number } = {
-  x: 74,
-  z: -42,
+  x: 78,
+  z: -40,
   radius: 8,
 };
 
@@ -312,14 +328,6 @@ function startRealtimeCombat(): void {
   const playerOffset = new THREE.Vector3(3, 0, 3); // offset so player is visible, not inside BOSS
   player.mesh.position.copy(arenaCenter).add(playerOffset);
   player.mesh.userData.combatReturnPos = returnPos;
-
-  // Debug: confirm BOSS added to scene
-  const bossGroup = combatEngine.getBossGroup();
-  console.log('⚔️ BOSS 战开始!', {
-    arenaCenter: combatEngine.arenaCenter,
-    bossPos: bossGroup?.position,
-    playerPos: player.mesh.position.clone(),
-  });
 
   // Create combat HUD and law effects
   combatHUD = new CombatHUD();
@@ -749,6 +757,3 @@ async function boot() {
 animate();
 boot();
 
-console.log('🎮 三年游 3D 就绪! WASD移动, E键交互, C键法则面板, J键图卷, M键地图, Tab切换视角, 滚轮缩放, 中键/右键旋转');
-console.log('🏛️ 纪念碑谷风格 — 默认正交等距视角');
-console.log('⚔️ 走到图书馆附近触发 BOSS 战!');

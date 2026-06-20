@@ -62,7 +62,7 @@ export class CombatHUD {
   }
 
   /** Show a floating combat message. */
-  showCombatMessage(text: string, type: 'dodge' | 'hit' | 'weakness' | 'phase'): void {
+  showCombatMessage(text: string, type: 'dodge' | 'hit' | 'weakness' | 'phase' | 'error'): void {
     const el = document.createElement('div');
     el.textContent = text;
     el.className = 'combat-float-msg';
@@ -72,12 +72,14 @@ export class CombatHUD {
       hit: '#fbbf24',
       weakness: '#ef4444',
       phase: '#f472b6',
+      error: '#f87171',
     };
     const fontSizes: Record<string, string> = {
       dodge: '16px',
       hit: '18px',
       weakness: '20px',
       phase: '24px',
+      error: '15px',
     };
 
     el.style.color = colors[type] ?? '#fff';
@@ -87,6 +89,8 @@ export class CombatHUD {
       el.style.textShadow = '0 0 12px rgba(239,68,68,0.8)';
     } else if (type === 'phase') {
       el.style.textShadow = '0 0 16px rgba(244,114,182,0.8)';
+    } else if (type === 'error') {
+      el.style.textShadow = '0 0 8px rgba(248,113,113,0.6)';
     }
 
     this.msgContainer.appendChild(el);

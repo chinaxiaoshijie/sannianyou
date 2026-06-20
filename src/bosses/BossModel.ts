@@ -21,6 +21,8 @@ export class BossModel {
   private wireframeActive = false;
   private pushBackVel = new THREE.Vector3();
   private pushBackTimer = 0;
+  // Health-ratio base scale (applied to body, separate from phase animation)
+  private bodyBaseScale = 1;
 
   constructor(data: BossData, position = new THREE.Vector3(0, 0, 0)) {
     this.group = new THREE.Group();
@@ -219,15 +221,15 @@ export class BossModel {
       }
     }
 
-    // Phase transition
+    // Phase transition — multiplicative on top of bodyBaseScale
     if (this.phaseTransition) {
       this.phaseTransitionTimer -= dt;
       const t = this.phaseTransitionTimer;
-      const crack = 1 + Math.sin(t * 20) * 0.1 * t;
-      this.body.scale.setScalar(crack);
+      const crackMult = 1 + Math.sin(t * 20) * 0.1 * t;
+      this.body.scale.setScalar(this.bodyBaseScale * crackMult);
       if (t <= 0) {
         this.phaseTransition = false;
-        this.body.scale.setScalar(1);
+        this.body.scale.setScalar(this.bodyBaseScale);
       }
     }
 
@@ -262,9 +264,13 @@ export class BossModel {
 
   /** Apply damage scale based on HP ratio (0-1). */
   setHealthRatio(ratio: number): void {
-    // Subtle shrink as HP decreases
+    // Subtle shrink as HP decreases; stored so phase animation can blend on top
     const s = 0.7 + 0.3 * ratio;
-    this.body.scale.setScalar(s);
+    this.bodyBaseScale = s;
+    // Only write to body.scale when no phase transition is running (avoids overwrite)
+    if (!this.phaseTransition) {
+      this.body.scale.setScalar(s);
+    }
     this.core.scale.setScalar(s * (1 + Math.sin(Date.now() * 0.005) * 0.15));
     // Core gets redder as HP drops
     const r = 1.0;
