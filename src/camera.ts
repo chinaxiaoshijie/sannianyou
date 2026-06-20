@@ -114,6 +114,23 @@ export class ThirdPersonCamera {
     return this.zoomTimer > 0;
   }
 
+  /** Apply an orbit delta (from touch drag). dx/dy are in radians. */
+  applyOrbitDelta(dx: number, dy: number): void {
+    this.yaw -= dx;
+    this.pitch = Math.max(-0.4, Math.min(1.35, this.pitch + dy));
+    this.targetYaw = null;
+  }
+
+  /** Apply a zoom delta (from pinch). Positive = zoom out. */
+  applyZoomDelta(delta: number): void {
+    if (this._useOrtho) {
+      this.frustumSize = Math.max(8, Math.min(60, this.frustumSize + delta));
+      this.setOrthoFrustum();
+    } else {
+      this.perspDistance = Math.max(6, Math.min(30, this.perspDistance + delta));
+    }
+  }
+
   update(target: THREE.Object3D): void {
     const dt = 0.016; // approx frame time
 

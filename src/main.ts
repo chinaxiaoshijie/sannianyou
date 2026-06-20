@@ -28,6 +28,7 @@ import { CultivationUI } from './ui/CultivationUI';
 import { MapPanel } from './ui/MapPanel';
 import { CodexPanel } from './ui/CodexPanel';
 import { HelpButton } from './ui/HelpButton';
+import { TouchControls } from './ui/TouchControls';
 import type { Question, Building, Zone } from './types';
 import type { GameConfig, BossData } from './types';
 import gameConfigData from './data/game-config.json';
@@ -280,6 +281,16 @@ window.addEventListener('keyup', (e) => {
   if (e.code === 'Digit3') combatInput.lawSlot3 = false;
 });
 
+/* ===== TOUCH CONTROLS ===== */
+const touchControls = new TouchControls({
+  onToggleLawPanel: () => { if (!inCombat) lawPanel.toggle(); },
+  onToggleCodex: () => { if (!inCombat && !cultivationUI.isOpen && codexPanel) codexPanel.toggle(); },
+  onToggleMap: () => { if (!inCombat && !cultivationUI.isOpen) mapPanel.toggle(); },
+  onToggleCamera: () => camera.toggleMode(),
+  onCameraOrbit: (dx, dy) => camera.applyOrbitDelta(dx, dy),
+  onCameraZoom: (delta) => camera.applyZoomDelta(delta),
+});
+
 // BOSS trigger zone (图书馆前广场) — library is at world x=74-82, aligned to entrance at (78,-37)
 const BOSS_TRIGGER: { x: number; z: number; radius: number } = {
   x: 78,
@@ -333,6 +344,9 @@ function startRealtimeCombat(): void {
   combatHUD = new CombatHUD();
   combatHUD.show();
   lawEffects = new LawEffects(scene);
+
+  // Switch touch controls to combat layout
+  touchControls.setCombatMode(true);
 }
 
 /** End real-time BOSS combat. */
@@ -364,6 +378,9 @@ function endRealtimeCombat(victory: boolean): void {
   combatInput.lawSlot3 = false;
   // Reset HP tracker so next combat starts clean
   prevCombatHP = 100;
+
+  // Switch touch controls back to exploration layout
+  touchControls.setCombatMode(false);
 
   if (victory) {
     // Award rewards
@@ -526,6 +543,22 @@ function animate() {
 
   const dt = Math.min(clock.getDelta(), 0.1);
 
+  // Merge touch input each frame (OR with keyboard)
+  if (touchControls.isTouch) {
+    touchControls.update();
+    // Movement (touch.input is authoritative on mobile; keyboard may also contribute)
+    input.forward  = input.forward  || touchControls.input.forward;
+    input.backward = input.backward || touchControls.input.backward;
+    input.left     = input.left     || touchControls.input.left;
+    input.right    = input.right    || touchControls.input.right;
+    input.interact = input.interact || touchControls.input.interact;
+    // Combat inputs
+    combatInput.dodge    = combatInput.dodge    || touchControls.combatInput.dodge;
+    combatInput.lawSlot1 = combatInput.lawSlot1 || touchControls.combatInput.lawSlot1;
+    combatInput.lawSlot2 = combatInput.lawSlot2 || touchControls.combatInput.lawSlot2;
+    combatInput.lawSlot3 = combatInput.lawSlot3 || touchControls.combatInput.lawSlot3;
+  }
+
   if (!inCombat && !cultivationUI.isOpen) {
     player.update(dt, input, buildingBoxes);
 
@@ -587,6 +620,12 @@ function animate() {
     // Law system update (only outside combat)
     lawManager.updateCooldowns(dt);
     lawHUD.update(dt);
+
+    // Sync touch interact button highlight
+    if (touchControls.isTouch) {
+      const nearTrigger = bossPromptShown || !!worldManager.interactionPrompt;
+      touchControls.setInteractHighlight(nearTrigger);
+    }
   }
 
     // Combat engine update
