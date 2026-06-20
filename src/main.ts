@@ -22,12 +22,7 @@ import { SoundManager } from './systems/combat/SoundManager';
 import { CombatHUD } from './ui/CombatHUD';
 
 import { HUD } from './ui/HUD';
-import { LawHUD } from './ui/LawHUD';
-import { LawPanel } from './ui/LawPanel';
 import { CultivationUI } from './ui/CultivationUI';
-import { MapPanel } from './ui/MapPanel';
-import { CodexPanel } from './ui/CodexPanel';
-import { HelpButton } from './ui/HelpButton';
 import { TouchControls } from './ui/TouchControls';
 import type { Question, Building, Zone } from './types';
 import type { GameConfig, BossData } from './types';
@@ -94,33 +89,9 @@ const hud = new HUD(stateManager);
 
 /* ===== LAW SYSTEM ===== */
 const lawManager = new LawManager(stateManager, equipmentManager);
-const lawHUD = new LawHUD(lawManager);
 
 /* ===== TUTORIAL SYSTEM ===== */
 const tutorialManager = new TutorialManager(stateManager, lawManager);
-const helpButton = new HelpButton();
-helpButton.init();
-
-/* ===== LAW PANEL (with equipment tab) ===== */
-const lawPanel = new LawPanel(lawManager, equipmentManager);
-
-/* ===== KEY BINDINGS (C=Law Panel, M=Map Panel) ===== */
-const mapPanel = new MapPanel();
-
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyC' && !inCombat) {
-    lawPanel.toggle();
-    e.preventDefault();
-  }
-  if (e.code === 'KeyM' && !inCombat && !cultivationUI.isOpen) {
-    mapPanel.toggle();
-    e.preventDefault();
-  }
-  if (e.code === 'KeyJ' && !inCombat && !cultivationUI.isOpen && codexPanel) {
-    codexPanel.toggle();
-    e.preventDefault();
-  }
-});
 
 /* ===== CULTIVATION SYSTEM ===== */
 const cultivationUI = new CultivationUI(
@@ -134,23 +105,6 @@ const cultivationUI = new CultivationUI(
 if (new URLSearchParams(window.location.search).has('dev')) {
   lawManager.checkUnlock(100);
   lawManager.autoEquip();
-}
-
-/* ===== CODEX PANEL (J key) ===== */
-let codexPanel: CodexPanel | null = null;
-try {
-  codexPanel = new CodexPanel(stateManager, lawManager, equipmentManager);
-} catch (err) {
-  console.error('[CodexPanel] 初始化失败:', err);
-  // 游戏继续运行，只是图卷不可用
-}
-
-// Compass click → reset camera to north
-const compassEl = document.getElementById('hud-compass');
-if (compassEl) {
-  compassEl.addEventListener('click', () => {
-    camera.resetOrientation();
-  });
 }
 
 /* ===== SCENE SETUP ===== */
@@ -283,9 +237,9 @@ window.addEventListener('keyup', (e) => {
 
 /* ===== TOUCH CONTROLS ===== */
 const touchControls = new TouchControls({
-  onToggleLawPanel: () => { if (!inCombat) lawPanel.toggle(); },
-  onToggleCodex: () => { if (!inCombat && !cultivationUI.isOpen && codexPanel) codexPanel.toggle(); },
-  onToggleMap: () => { if (!inCombat && !cultivationUI.isOpen) mapPanel.toggle(); },
+  onToggleLawPanel: () => {},
+  onToggleCodex: () => {},
+  onToggleMap: () => {},
   onToggleCamera: () => camera.toggleMode(),
   onCameraOrbit: (dx, dy) => camera.applyOrbitDelta(dx, dy),
   onCameraZoom: (delta) => camera.applyZoomDelta(delta),
@@ -543,14 +497,15 @@ function animate() {
 
   const dt = Math.min(clock.getDelta(), 0.1);
 
-  // Merge touch input each frame (OR with keyboard)
+  // Merge touch input each frame (touch is authoritative for movement)
   if (touchControls.isTouch) {
     touchControls.update();
-    // Movement (touch.input is authoritative on mobile; keyboard may also contribute)
-    input.forward  = input.forward  || touchControls.input.forward;
-    input.backward = input.backward || touchControls.input.backward;
-    input.left     = input.left     || touchControls.input.left;
-    input.right    = input.right    || touchControls.input.right;
+    // Movement: assign directly so stale keyboard values don't persist
+    input.forward  = touchControls.input.forward;
+    input.backward = touchControls.input.backward;
+    input.left     = touchControls.input.left;
+    input.right    = touchControls.input.right;
+    // interact: OR so keyboard E still works alongside touch button
     input.interact = input.interact || touchControls.input.interact;
     // Combat inputs
     combatInput.dodge    = combatInput.dodge    || touchControls.combatInput.dodge;
@@ -572,7 +527,6 @@ function animate() {
     }
 
     worldManager.update(player.mesh.position.x, player.mesh.position.z, dt);
-
     // BOSS E key check — must happen before interactHeld is set to true
     const justPressedE = input.interact && !interactHeld;
 
@@ -591,9 +545,6 @@ function animate() {
     if (!bossPromptShown) {
       hud.setInteractionPrompt(worldManager.interactionPrompt);
     }
-
-    // Update map player position
-    mapPanel.updatePlayerPosition(player.mesh.position.x, player.mesh.position.z);
 
     // Tutorial system
     if (!tutorialManager.isComplete) {
@@ -619,7 +570,6 @@ function animate() {
 
     // Law system update (only outside combat)
     lawManager.updateCooldowns(dt);
-    lawHUD.update(dt);
 
     // Sync touch interact button highlight
     if (touchControls.isTouch) {
@@ -652,7 +602,6 @@ function animate() {
 
       // Update law cooldowns during combat
       lawManager.updateCooldowns(dt);
-      lawHUD.update(dt);
 
       // Update law visual effects + mechanism dispatch
       if (lawEffects) {

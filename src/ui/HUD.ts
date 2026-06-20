@@ -1,10 +1,9 @@
 import type { StateManager } from '../core/StateManager';
-import type { PlayerState, GameState } from '../types';
+import type { PlayerState } from '../types';
 
 /**
- * HUD — always-visible HTML overlay showing player stats,
- * zone name, interaction prompt, and save indicator.
- * Subscribes to StateManager events for reactive updates.
+ * HUD — always-visible HTML overlay showing HP/MP bars,
+ * interaction prompt, and save indicator.
  */
 export class HUD {
   private container: HTMLDivElement;
@@ -17,7 +16,6 @@ export class HUD {
   private hpText!: HTMLSpanElement;
   private mpBar!: HTMLDivElement;
   private mpText!: HTMLSpanElement;
-  private zoneNameEl!: HTMLSpanElement;
   private interactionPromptEl!: HTMLDivElement;
   private saveIndicatorEl!: HTMLDivElement;
 
@@ -26,7 +24,6 @@ export class HUD {
 
   // Event cleanup
   private boundOnPlayerChanged: (data: unknown) => void;
-  private boundOnGameChanged: (data: unknown) => void;
   private boundOnGameSaved: () => void;
 
   // HP base for bar calculation
@@ -40,17 +37,14 @@ export class HUD {
 
     // Bind event handlers
     this.boundOnPlayerChanged = this.onPlayerChanged.bind(this);
-    this.boundOnGameChanged = this.onGameChanged.bind(this);
     this.boundOnGameSaved = this.onGameSaved.bind(this);
 
     // Subscribe to state changes
     stateManager.events.on('player-changed', this.boundOnPlayerChanged);
-    stateManager.events.on('game-changed', this.boundOnGameChanged);
     stateManager.events.on('game-saved', this.boundOnGameSaved);
 
     // Initial render
     this.refreshPlayer(stateManager.getPlayerState());
-    this.refreshGame(stateManager.getGameState());
   }
 
   private createContainer(): HTMLDivElement {
@@ -155,35 +149,6 @@ export class HUD {
   min-width: 64px;
   text-shadow: 0 0 4px rgba(255,255,255,0.2);
 }
-/* Top-center: zone name */
-.hud-zone {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 13px;
-  color: rgba(200,168,78,0.8);
-  text-shadow: 0 0 8px rgba(200,168,78,0.3);
-}
-/* Top-right: compass */
-.hud-compass {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  cursor: pointer;
-  pointer-events: all;
-  transition: transform 0.15s;
-}
-.hud-compass:hover { transform: scale(1.15); }
-.hud-compass:active { transform: scale(0.95); }
-.hud-compass-n { font-size: 12px; color: #ef4444; font-weight: bold; }
-.hud-compass-ew { font-size: 10px; color: #9ca3af; display: flex; gap: 16px; }
-.hud-compass-s { font-size: 10px; color: #9ca3af; }
-.hud-compass-dir { font-size: 10px; color: #c8a84e; margin-top: 2px; }
 /* Bottom-center: interaction prompt */
 .hud-interact {
   position: fixed;
@@ -239,12 +204,6 @@ export class HUD {
     </div>
   </div>
 </div>
-<div class="hud-zone" id="hud-zone">启程之门</div>
-<div class="hud-compass" id="hud-compass">
-  <span class="hud-compass-n">▲ N</span>
-  <span class="hud-compass-ew"><span>W</span><span>E</span></span>
-  <span class="hud-compass-s">▼ S</span>
-</div>
 <div class="hud-interact" id="hud-interact"></div>
 <div class="hud-save-indicator" id="hud-save-indicator">💾 游戏已保存!</div>
 `;
@@ -257,17 +216,12 @@ export class HUD {
     this.hpText = el.querySelector('#hud-hp-text')!;
     this.mpBar = el.querySelector('#hud-mp-bar')!;
     this.mpText = el.querySelector('#hud-mp-text')!;
-    this.zoneNameEl = el.querySelector('#hud-zone')!;
     this.interactionPromptEl = el.querySelector('#hud-interact')!;
     this.saveIndicatorEl = el.querySelector('#hud-save-indicator')!;
   }
 
   private onPlayerChanged(data: unknown): void {
     this.refreshPlayer(data as PlayerState);
-  }
-
-  private onGameChanged(data: unknown): void {
-    this.refreshGame(data as GameState);
   }
 
   private onGameSaved(): void {
@@ -290,17 +244,6 @@ export class HUD {
     const mpRatio = Math.max(0, player.caiQi / this.mpBase);
     this.mpBar.style.width = `${mpRatio * 100}%`;
     this.mpText.textContent = `${player.caiQi}/${this.mpBase}`;
-  }
-
-  private refreshGame(game: GameState): void {
-    // Map zone IDs to display names
-    const zoneNames: Record<string, string> = {
-      south: '启程之门',
-      central: '知识之殿',
-      north: '竞技之巅',
-      northwest: '实验秘境',
-    };
-    this.zoneNameEl.textContent = zoneNames[game.currentZone] ?? game.currentZone;
   }
 
   /**
@@ -329,7 +272,6 @@ export class HUD {
    */
   destroy(): void {
     this.stateManager.events.off('player-changed', this.boundOnPlayerChanged);
-    this.stateManager.events.off('game-changed', this.boundOnGameChanged);
     this.stateManager.events.off('game-saved', this.boundOnGameSaved);
     this.container.remove();
   }

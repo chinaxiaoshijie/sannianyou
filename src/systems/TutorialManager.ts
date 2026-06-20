@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import type { StateManager } from '../core/StateManager';
-import type { LawManager } from '../core/LawManager';
 
 /* ── Tutorial step definitions ── */
 export interface TutorialStep {
@@ -13,14 +11,8 @@ export interface TutorialStep {
 
 export interface TutorialContext {
   playerPos: THREE.Vector3;
-  kp: number;
-  hasEquippedLaw: boolean;
-  nearGate: boolean;
-  inLab: boolean;
-  nearBridge: boolean;
   movedOnce: boolean;
   interactedOnce: boolean;
-  tutorialActive: boolean;
 }
 
 const STORAGE_KEY = 'tutorial_step';
@@ -32,8 +24,6 @@ const COMPLETE_KEY = 'tutorial_complete';
  * Progress persists in localStorage.
  */
 export class TutorialManager {
-  private stateManager: StateManager;
-  private lawManager: LawManager;
   private container: HTMLDivElement | null = null;
   private titleEl: HTMLDivElement | null = null;
   private bodyEl: HTMLDivElement | null = null;
@@ -47,8 +37,8 @@ export class TutorialManager {
 
   private steps: TutorialStep[] = [
     {
-      id: 'welcome',
-      title: '欢迎来到深中高中园 · 三年游',
+      id: 'move',
+      title: '欢迎来到三年游',
       body: '使用 WASD 移动角色',
       check: (ctx) => ctx.movedOnce,
     },
@@ -59,28 +49,14 @@ export class TutorialManager {
       check: (ctx) => ctx.interactedOnce,
     },
     {
-      id: 'cultivate',
-      title: '第一次修炼',
-      body: '前往实验室，开始第一次修炼\n按 M 键打开地图查看位置',
-      check: (ctx) => ctx.inLab,
-    },
-    {
-      id: 'law',
-      title: '装配法则',
-      body: '你获得了道行！按 C 键装配法则',
-      check: (ctx) => ctx.hasEquippedLaw,
-    },
-    {
       id: 'combat',
       title: '挑战 BOSS',
-      body: '前往图书馆，挑战遗忘·残卷\n战斗中按 空格 闪避，按 1/2/3 释放法则\nBOSS 破绽时攻击伤害翻倍！',
-      check: () => false, // completed by notifyCombatStart when battle begins
+      body: '前往图书馆，挑战遗忘·残卷\n空格闪避，1/2/3 释放法则',
+      check: () => false,
     },
   ];
 
-  constructor(stateManager: StateManager, lawManager: LawManager) {
-    this.stateManager = stateManager;
-    this.lawManager = lawManager;
+  constructor(_stateManager: unknown, _lawManager: unknown) {
     this.loadProgress();
     if (!this._isComplete) {
       this.createOverlay();
@@ -181,10 +157,6 @@ export class TutorialManager {
   }
 
   private buildContext(playerPos: THREE.Vector3): TutorialContext {
-    const playerState = this.stateManager.getPlayerState();
-    const slots = this.lawManager.getSlots();
-    const hasEquippedLaw = slots.some((s) => s.law !== null);
-
     // Track if player has moved from start
     if (!this.movedOnce && this.playerStartPos.length() === 0) {
       this.playerStartPos.copy(playerPos);
@@ -193,31 +165,10 @@ export class TutorialManager {
       this.movedOnce = true;
     }
 
-    // Near gate: gate is at approximately (64, 0, -68)
-    const dx = playerPos.x - 64;
-    const dz = playerPos.z - (-68);
-    const nearGate = Math.sqrt(dx * dx + dz * dz) < 6;
-
-    // In lab zone: lab is at approximately (20, 0, -20)
-    const labDx = playerPos.x - 20;
-    const labDz = playerPos.z - (-20);
-    const inLab = Math.sqrt(labDx * labDx + labDz * labDz) < 5;
-
-    // Near library: library entrance is at approximately (74, 0, -42)
-    const libDx = playerPos.x - 74;
-    const libDz = playerPos.z - (-42);
-    const nearLibrary = Math.sqrt(libDx * libDx + libDz * libDz) < 8;
-
     return {
       playerPos,
-      kp: playerState.kp,
-      hasEquippedLaw,
-      nearGate,
-      inLab,
-      nearBridge: nearLibrary,
       movedOnce: this.movedOnce,
       interactedOnce: this.interactedOnce,
-      tutorialActive: !this._isComplete,
     };
   }
 

@@ -76,7 +76,6 @@ export class TouchControls {
   private joystickOuter!: HTMLDivElement;
   private joystickKnob!: HTMLDivElement;
   private interactBtn!: HTMLButtonElement;
-  private toolbarEl!: HTMLDivElement;
   private lawBtns: HTMLButtonElement[] = [];
   private dodgeHint!: HTMLDivElement;
 
@@ -203,25 +202,6 @@ export class TouchControls {
     this.interactBtn.setAttribute('aria-label', '交互 (E)');
     this.root.appendChild(this.interactBtn);
 
-    // Toolbar (top-right panel buttons)
-    this.toolbarEl = document.createElement('div');
-    this.toolbarEl.className = 'tc-toolbar';
-    const toolButtons: [string, string, () => void][] = [
-      ['⚔️', '法则 (C)', () => this.callbacks.onToggleLawPanel()],
-      ['📖', '图卷 (J)', () => this.callbacks.onToggleCodex()],
-      ['🗺️', '地图 (M)', () => this.callbacks.onToggleMap()],
-      ['🔄', '视角 (Tab)', () => this.callbacks.onToggleCamera()],
-    ];
-    for (const [icon, label, cb] of toolButtons) {
-      const btn = document.createElement('button');
-      btn.className = 'tc-tool-btn';
-      btn.textContent = icon;
-      btn.setAttribute('aria-label', label);
-      btn.addEventListener('touchstart', (e) => { e.stopPropagation(); cb(); }, { passive: true });
-      this.toolbarEl.appendChild(btn);
-    }
-    this.root.appendChild(this.toolbarEl);
-
     // Law buttons 1/2/3 (combat mode)
     const lawContainer = document.createElement('div');
     lawContainer.className = 'tc-law-container';
@@ -294,26 +274,6 @@ export class TouchControls {
   box-shadow:0 2px 12px rgba(0,0,0,0.4);
 }
 .tc-interact-btn:active{transform:scale(0.92)!important;}
-.tc-toolbar {
-  position:absolute;
-  top:14px;right:14px;
-  display:flex;flex-direction:column;gap:8px;
-  pointer-events:all;
-}
-.tc-tool-btn {
-  width:46px;height:46px;
-  border-radius:12px;
-  background:rgba(10,14,26,0.72);
-  border:1px solid rgba(200,168,78,0.35);
-  color:#c8a84e;
-  font-size:20px;
-  cursor:pointer;
-  pointer-events:all;
-  touch-action:none;
-  display:flex;align-items:center;justify-content:center;
-  transition:background 0.15s,transform 0.1s;
-}
-.tc-tool-btn:active{transform:scale(0.88);background:rgba(200,168,78,0.18);}
 .tc-law-container {
   position:absolute;
   bottom:24px;right:108px;
@@ -473,7 +433,7 @@ export class TouchControls {
   private isOnButton(target: EventTarget | null): boolean {
     if (!target) return false;
     const el = target as HTMLElement;
-    return !!(el.closest('.tc-interact-btn, .tc-law-btn, .tc-tool-btn, .tc-joystick-outer'));
+    return !!(el.closest('.tc-interact-btn, .tc-law-btn, .tc-joystick-outer'));
   }
 
   private onGlobalTouchStart = (e: TouchEvent): void => {
